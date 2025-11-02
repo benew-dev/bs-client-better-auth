@@ -47,13 +47,15 @@ const Search = ({ setLoading }) => {
         // Vérification simple avant validation
         if (!keyword || keyword.trim() === "") {
           toast.error("Veuillez entrer un terme de recherche");
-          setLoading?.(false);
+          setLoading(false);
           setIsSubmitting(false);
           return;
         }
 
         // Navigation vers la page de résultats
         router.push(`/?keyword=${encodeURIComponent(keyword.trim())}`);
+        setLoading(false);
+        setIsSubmitting(false);
       } catch (error) {
         // Gestion d'erreur améliorée
         if (error.inner && error.inner.length) {

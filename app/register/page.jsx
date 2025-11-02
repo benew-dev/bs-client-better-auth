@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
-// import { redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { lazy } from "react";
-// import { getAuthenticatedUser } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/lib/auth";
 
 // Chargement dynamique optimisé avec retries
 const Register = lazy(() => import("@/components/auth/Register"));
@@ -54,11 +54,17 @@ export const header = {
 async function RegisterPage() {
   // Vérifier si l'utilisateur est déjà connecté
   const headersList = await headers();
-  // const user = await getAuthenticatedUser(headersList);
-  // if (user) {
-  //   // Rediriger l'utilisateur déjà connecté vers la page d'accueil
-  //   return redirect("/");
-  // }
+  const user = await getAuthenticatedUser(headersList);
+  if (user) {
+    console.log("An user is already logged in", {
+      user: user,
+      role: user.role,
+    });
+    // Rediriger vers la page d'accueil ou tableau de bord selon le rôle
+    console.log("Log out to register an user, redirecting to home page");
+    // Rediriger l'utilisateur déjà connecté vers la page d'accueil
+    return redirect("/");
+  }
 
   try {
     // Récupérer les en-têtes pour le monitoring et la sécurité
