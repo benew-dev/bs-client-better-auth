@@ -4,7 +4,7 @@ import {
   // useContext,
   useEffect,
   useState,
-  // useCallback,
+  useCallback,
   memo,
   useRef,
 } from "react";
@@ -16,6 +16,7 @@ import Image from "next/image";
 // import AuthContext from "@/context/AuthContext";
 import { Menu, ShoppingCart, User, X } from "lucide-react";
 import dynamic from "next/dynamic";
+import { signOut, useSession } from "@/lib/auth-client";
 
 // Chargement dynamique optimisé du composant Search
 const Search = dynamic(() => import("./Search"), {
@@ -27,7 +28,7 @@ const Search = dynamic(() => import("./Search"), {
 
 // Constantes pour éviter les recréations
 // const CART_LOAD_DELAY = 500;
-// const IS_PRODUCTION = process.env.NODE_ENV === "production";
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
 
 // ✅ Bouton panier
 const CartButton = memo(({ cartCount }) => {
@@ -128,17 +129,12 @@ const UserDropdown = memo(({ user }) => {
 UserDropdown.displayName = "UserDropdown";
 
 const Header = () => {
-  // const {
-  //   user,
-  //   setLoading: setAuthLoading,
-  //   setUser,
-  //   clearUser,
-  // } = useContext(AuthContext);
+  const { data: session } = useSession();
+  const user = session?.user;
   // const { setCartToState, cartCount, clearCartOnLogout } =
   //   useContext(CartContext);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   // const [isLoadingCart, setIsLoadingCart] = useState(false);
-  // const { data } = useSession();
 
   // Refs pour gérer les timeouts
   const loadCartTimeoutRef = useRef(null);
@@ -256,22 +252,25 @@ const Header = () => {
   }, [mobileMenuOpen]);
 
   // handleSignOut optimisé
-  // const handleSignOut = useCallback(async () => {
-  //   try {
-  //     clearUser();
-  //     clearCartOnLogout();
-  //     await signOut({ callbackUrl: "/login" });
+  const handleSignOut = useCallback(
+    async () => {
+      try {
+        await signOut({ callbackUrl: "/login" });
 
-  //     signOutTimeoutRef.current = setTimeout(() => {
-  //       window.location.href = "/login";
-  //     }, 100);
-  //   } catch (error) {
-  //     if (!IS_PRODUCTION) {
-  //       console.error("Erreur lors de la déconnexion:", error);
-  //     }
-  //     window.location.href = "/login";
-  //   }
-  // }, [clearUser, clearCartOnLogout]);
+        signOutTimeoutRef.current = setTimeout(() => {
+          window.location.href = "/login";
+        }, 100);
+      } catch (error) {
+        if (!IS_PRODUCTION) {
+          console.error("Erreur lors de la déconnexion:", error);
+        }
+        window.location.href = "/login";
+      }
+    },
+    [
+      /*clearCartOnLogout*/
+    ],
+  );
 
   const closeMobileMenu = () => {
     setMobileMenuOpen(false);
@@ -303,8 +302,8 @@ const Header = () => {
 
           {/* Mobile buttons (Panier + Photo profil OU Hamburger) */}
           <div className="md:hidden flex items-center gap-2">
-            {
-              /*user &&*/ <>
+            {user && (
+              <>
                 {/* Bouton Panier Mobile */}
                 <Link
                   href="/cart"
@@ -331,7 +330,7 @@ const Header = () => {
                   aria-expanded={mobileMenuOpen}
                   aria-controls="mobile-menu"
                 >
-                  {/* <Image
+                  <Image
                     alt={`Photo de profil de ${user?.name || "utilisateur"}`}
                     src={
                       user?.avatar?.url !== null
@@ -341,14 +340,14 @@ const Header = () => {
                     fill
                     sizes="40px"
                     className="object-cover"
-                  /> */}
+                  />
                 </button>
               </>
-            }
+            )}
 
             {/* Menu Hamburger pour utilisateurs non connectés */}
-            {
-              /*!user &&*/ <button
+            {!user && (
+              <button
                 onClick={toggleMobileMenu}
                 className="px-3 py-2 border border-gray-200 rounded-md text-gray-700"
                 aria-label={
@@ -359,30 +358,30 @@ const Header = () => {
               >
                 {mobileMenuOpen ? <X /> : <Menu />}
               </button>
-            }
+            )}
           </div>
 
           {/* Search - Desktop */}
           <div className="hidden md:block md:flex-1 max-w-xl mx-4">
-            <Search /*setLoading={setAuthLoading} */ />
+            <Search />
           </div>
 
           {/* User navigation - Desktop */}
           <div className="hidden md:flex items-center space-x-3">
             {/* {user && <CartButton cartCount={cartCount} />} */}
 
-            {
-              /*!user ?*/ <Link
+            {!user ? (
+              <Link
                 href="/login"
                 className="px-3 py-2 flex flex-row text-gray-700 bg-white shadow-sm border border-gray-200 rounded-md hover:bg-blue-50 hover:border-blue-200 transition-colors"
                 data-testid="login"
               >
                 <User className="text-gray-400 w-5" />
                 <span className="ml-1">Connexion</span>
-              </Link> /*: (
+              </Link>
+            ) : (
               <UserDropdown user={user} />
-            )*/
-            }
+            )}
           </div>
         </div>
 
@@ -396,54 +395,54 @@ const Header = () => {
             aria-label="Menu principal"
           >
             <div className="mb-4">
-              <Search /*setLoading={setAuthLoading}*/ />
+              <Search />
             </div>
-            {
-              /*user ? */ (<div className="space-y-3">
+            {user ? (
+              <div className="space-y-3">
                 {/* Mon profil réapparaît */}
-                {/* <Link
+                <Link
                   href="/me"
                   onClick={closeMobileMenu}
                   className="block px-2 py-2 text-sm text-gray-700 hover:bg-blue-50 rounded-md"
                 >
                   Mon profil
-                </Link> */}
+                </Link>
 
-                {/* <Link
+                <Link
                   href="/me/orders"
                   onClick={closeMobileMenu}
                   className="block px-2 py-2 text-sm text-gray-700 hover:bg-blue-50 rounded-md"
                 >
                   Mes commandes
-                </Link> */}
+                </Link>
 
-                {/* <Link
+                <Link
                   href="/me/contact"
                   onClick={closeMobileMenu}
                   className="block px-2 py-2 text-sm text-gray-700 hover:bg-blue-50 rounded-md"
                 >
                   Contactez le vendeur
-                </Link> */}
+                </Link>
 
-                {/* <button
+                <button
                   onClick={async () => {
                     closeMobileMenu();
-                    // await handleSignOut();
+                    await handleSignOut();
                   }}
                   className="block cursor-pointer w-full text-left px-2 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md"
                 >
                   Déconnexion
-                </button> */}
-              </div>)(
-                /*:*/ <Link
-                  href="/login"
-                  onClick={closeMobileMenu}
-                  className="block w-full text-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  Connexion
-                </Link>,
-              )
-            }
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                onClick={closeMobileMenu}
+                className="block w-full text-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Connexion
+              </Link>
+            )}
           </div>
         )}
       </div>
