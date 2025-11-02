@@ -26,7 +26,7 @@ const eslintConfig = [
   ...compat.extends(
     "eslint:recommended",
     "plugin:react/recommended",
-    "plugin:prettier/recommended",
+    // "plugin:prettier/recommended",
     // 'next/core-web-vitals',
     // 'plugin:react-hooks/recommended',
     // 'plugin:security/recommended-legacy',
