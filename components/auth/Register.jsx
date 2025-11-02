@@ -1,15 +1,17 @@
 "use client";
 
-import { useState, useContext, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { toast } from "react-toastify";
 import { CheckCircle, LoaderCircle } from "lucide-react";
 // import AuthContext from "@/context/AuthContext";
 import captureClientError from "@/monitoring/sentry";
+import { signUp } from "@/lib/auth-client";
 
 const Register = () => {
   // Contexte d'authentification
   // const {
+  //   registerUser,
   //   error,
   //   clearErrors,
   //   loading: contextLoading,
@@ -190,92 +192,28 @@ const Register = () => {
         return;
       }
 
-      // Appel direct à l'API
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
+      // registerUser(formData);
+
+      // Inscription avec Better Auth
+      const { data, error } = await signUp.email({
+        email: formData.email,
+        password: formData.password,
+        name: formData.name,
+        phone: formData.phone,
       });
 
-      const data = await response.json();
+      if (error) {
+        console.log(error);
+        toast.error(error.message || "Erreur lors de l'inscription");
+        setIsSubmitting(false);
+        return;
+      }
 
-      if (response.ok && data.success) {
-        // ✅ SUCCÈS: Inscription réussie
-        setRegistrationSuccess(true);
-        setRegistrationData(data.data);
-
-        // Réinitialiser le formulaire
-        setFormData({
-          name: "",
-          phone: "",
-          email: "",
-          password: "",
-        });
-        setPasswordStrength(0);
-
-        // Toast de succès
-        toast.success(data.message || "Inscription réussie !");
-
-        // Log pour développement
-        if (process.env.NODE_ENV === "development") {
-          console.log("Registration successful:", {
-            user: data.data?.user?.email,
-          });
-        }
-      } else {
-        // ✅ ERREUR: Gestion des erreurs spécifiques avec monitoring
-        let errorType = "generic";
-        let isCritical = false;
-
-        switch (data.code) {
-          case "DUPLICATE_EMAIL":
-          case "DUPLICATE_TELEPHONE":
-            errorType = "duplicate_data";
-            isCritical = false;
-            toast.error(data.message);
-            break;
-          case "VALIDATION_FAILED":
-            errorType = "validation_failed";
-            isCritical = false;
-            if (data.errors) {
-              setErrors(data.errors);
-              toast.error("Veuillez corriger les erreurs dans le formulaire");
-            } else {
-              toast.error(data.message);
-            }
-            break;
-          case "RATE_LIMITED":
-            errorType = "rate_limited";
-            isCritical = true; // Peut indiquer une attaque
-            toast.error("Trop de tentatives. Veuillez réessayer plus tard.");
-            break;
-          default:
-            errorType = "server_error";
-            isCritical = true;
-            toast.error(data.message || "Erreur lors de l'inscription");
-        }
-
-        // Monitoring avec contexte riche
-        captureClientError(
-          new Error(`Échec inscription: ${errorType}`),
-          "Register",
-          "registrationFailure",
-          isCritical,
-          {
-            errorType,
-            statusCode: response.status,
-            originalError: data.message,
-            errorCode: data.code,
-            hasValidationErrors: !!data.errors,
-            formData: {
-              emailDomain: formData.email ? formData.email.split("@")[1] : null,
-              passwordStrength: passwordStrength,
-              nameLength: formData.name ? formData.name.length : 0,
-            },
-          },
-        );
+      if (data) {
+        toast.success("Inscription réussie !");
+        // Rediriger vers login
+        window.location.href = "/login";
+        console.log(data);
       }
     } catch (error) {
       // Monitoring : Erreurs techniques
