@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import dbConnect from "@/backend/config/dbConnect";
 import Product from "@/backend/models/product";
+// eslint-disable-next-line no-unused-vars
 import Category from "@/backend/models/category";
 import { captureException } from "@/monitoring/sentry";
 import { withIntelligentRateLimit } from "@/utils/rateLimit";
