@@ -3,7 +3,6 @@
 import { useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
-// import { searchSchema } from '@/helpers/schemas';
 
 // Fonction de debounce pour limiter les requêtes
 const useDebounce = (fn, delay) => {
@@ -53,9 +52,6 @@ const Search = ({ setLoading }) => {
           return;
         }
 
-        // Validation avec le schéma Yup
-        // await searchSchema.validate({ keyword }, { abortEarly: false });
-
         // Navigation vers la page de résultats
         router.push(`/?keyword=${encodeURIComponent(keyword.trim())}`);
       } catch (error) {
@@ -95,7 +91,7 @@ const Search = ({ setLoading }) => {
 
   return (
     <form
-      className="flex flex-nowrap items-center w-full order-last md:order-none mt-5 md:mt-0 md:w-1/3 lg:w-2/4"
+      className="flex flex-nowrap items-center w-full order-last md:order-0 mt-5 md:mt-0 md:w-1/3 lg:w-2/4"
       onSubmit={(e) => {
         e.preventDefault();
         debouncedSubmit(e);
