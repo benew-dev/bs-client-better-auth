@@ -4,19 +4,10 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { toast } from "react-toastify";
 import { CheckCircle, LoaderCircle } from "lucide-react";
-// import AuthContext from "@/context/AuthContext";
 import captureClientError from "@/monitoring/sentry";
 import { signUp } from "@/lib/auth-client";
 
 const Register = () => {
-  // Contexte d'authentification
-  // const {
-  //   registerUser,
-  //   error,
-  //   clearErrors,
-  //   loading: contextLoading,
-  // } = useContext(AuthContext);
-
   // États du formulaire
   const [formData, setFormData] = useState({
     name: "",
@@ -52,51 +43,6 @@ const Register = () => {
       captureClientError(error, "Register", "connectionDetection", false);
     }
   }, []);
-
-  // Gestion des erreurs depuis le contexte
-  // useEffect(() => {
-  //   if (error) {
-  //     // Classification des erreurs avec monitoring
-  //     let errorType = "generic";
-  //     let isCritical = false;
-
-  //     if (error.includes("duplicate") || error.includes("already exists")) {
-  //       errorType = "duplicate_user";
-  //       isCritical = false; // Erreur utilisateur normale
-  //       toast.error(
-  //         "Cet email est déjà utilisé. Veuillez vous connecter ou utiliser un autre email.",
-  //       );
-  //     } else if (error.includes("validation")) {
-  //       errorType = "validation_error";
-  //       isCritical = false;
-  //       toast.error(error);
-  //     } else {
-  //       errorType = "server_error";
-  //       isCritical = true; // Erreur serveur = critique
-  //       toast.error(error);
-  //     }
-
-  //     // Monitoring avec contexte
-  //     captureClientError(
-  //       new Error(`Erreur contexte: ${errorType}`),
-  //       "Register",
-  //       "contextError",
-  //       isCritical,
-  //       {
-  //         errorType,
-  //         originalError: error,
-  //         formData: {
-  //           hasName: !!formData.name,
-  //           hasEmail: !!formData.email,
-  //           hasPhone: !!formData.phone,
-  //           emailDomain: formData.email ? formData.email.split("@")[1] : null,
-  //         },
-  //       },
-  //     );
-
-  //     clearErrors();
-  //   }
-  // }, [error, clearErrors, formData]);
 
   // Mise à jour des champs du formulaire
   const handleChange = async (e) => {
@@ -192,8 +138,6 @@ const Register = () => {
         return;
       }
 
-      // registerUser(formData);
-
       // Inscription avec Better Auth
       const { data, error } = await signUp.email({
         email: formData.email,
@@ -204,7 +148,6 @@ const Register = () => {
       });
 
       if (error) {
-        console.log(error);
         toast.error("Erreur lors de l'inscription");
         setIsSubmitting(false);
         return;
@@ -214,7 +157,6 @@ const Register = () => {
         toast.success("Inscription réussie !");
         // Rediriger vers login
         window.location.href = "/login";
-        console.log(data);
       }
     } catch (error) {
       // Monitoring : Erreurs techniques
