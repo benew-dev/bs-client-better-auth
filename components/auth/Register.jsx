@@ -200,11 +200,12 @@ const Register = () => {
         password: formData.password,
         name: formData.name,
         phone: formData.phone,
+        callbackURL: "/", // A URL to redirect to after the user verifies their email (optional)
       });
 
       if (error) {
         console.log(error);
-        toast.error(error.message || "Erreur lors de l'inscription");
+        toast.error("Erreur lors de l'inscription");
         setIsSubmitting(false);
         return;
       }

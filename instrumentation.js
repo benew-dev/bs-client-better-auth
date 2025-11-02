@@ -9,7 +9,7 @@ EventEmitter.defaultMaxListeners = 20;
 
 /**
  * Hook Next.js 15 - Initialisation de l'instrumentation
- * Charge Sentry serveur uniquement en environnement Node.js
+ * Charge Sentry serveur et initialise better-auth uniquement en environnement Node.js
  */
 export async function register() {
   // Import conditionnel selon l'environnement
@@ -23,8 +23,24 @@ export async function register() {
     } catch (error) {
       console.error(
         "❌ Failed to load Sentry server configuration:",
-        error.message
+        error.message,
       );
+    }
+
+    // ===== INITIALISATION BETTER-AUTH =====
+    console.log("🔐 Initializing better-auth...");
+    try {
+      const { initializeAuth } = await import("@/lib/auth");
+      await initializeAuth();
+      console.log("✅ Better-auth initialized successfully");
+    } catch (error) {
+      console.error("❌ Failed to initialize better-auth:", error.message);
+
+      // En production, on peut vouloir que l'app démarre quand même
+      // En développement, on throw pour debug
+      if (process.env.NODE_ENV === "development") {
+        console.error("Stack trace:", error.stack);
+      }
     }
   }
 
