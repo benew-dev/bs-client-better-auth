@@ -4,29 +4,29 @@
  */
 
 // Export des utilitaires de base
-// export {
-//   REGEX,
-//   sanitizeString,
-//   isValidObjectId,
-//   isValidPhone,
-//   isValidDjiboutiPhone,
-//   validate,
-//   formatValidationErrors,
-// } from "./core/utils";
+export {
+  REGEX,
+  sanitizeString,
+  isValidObjectId,
+  isValidPhone,
+  isValidDjiboutiPhone,
+  validate,
+  formatValidationErrors,
+} from "./core/utils";
 
 // Export des schémas d'authentification
-// export {
-//   loginSchema,
-//   registerSchema,
-//   updatePasswordSchema,
-//   forgotPasswordSchema,
-//   resetPasswordSchema,
-//   validateLogin,
-//   validateRegister,
-//   validatePasswordUpdate,
-//   validateForgotPassword,
-//   validateResetPassword,
-// } from "./schemas/auth";
+export {
+  loginSchema,
+  registerSchema,
+  updatePasswordSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  validateLogin,
+  validateRegister,
+  validatePasswordUpdate,
+  validateForgotPassword,
+  validateResetPassword,
+} from "./schemas/auth";
 
 // Export des schémas utilisateur
 // export {
