@@ -76,7 +76,7 @@ const eslintConfig = [
       // 'optimize-regex/optimize-regex': 'warn',
       // 'react/no-array-index-key': 'error',
       "react/forbid-dom-props": ["warn", { forbid: ["style"] }],
-      "prettier/prettier": "warn",
+      // "prettier/prettier": "warn",
       // 'import/order': [
       //   'error',
       //   {
