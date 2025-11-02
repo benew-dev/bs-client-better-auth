@@ -10,7 +10,7 @@ import pluginNext from "@next/eslint-plugin-next";
 // import securityPlugin from 'eslint-plugin-security';
 // import importPlugin from 'eslint-plugin-import';
 // import optimizeRegexPlugin from 'eslint-plugin-optimize-regex';
-import prettierPlugin from "eslint-plugin-prettier";
+// import prettierPlugin from "eslint-plugin-prettier";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -56,7 +56,7 @@ const eslintConfig = [
       // security: securityPlugin,
       // import: importPlugin,
       // 'optimize-regex': optimizeRegexPlugin,
-      prettier: prettierPlugin,
+      // prettier: prettierPlugin,
     },
     rules: {
       "react/react-in-jsx-scope": 0,
