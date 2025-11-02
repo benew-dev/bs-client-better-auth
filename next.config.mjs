@@ -30,8 +30,8 @@ const validateEnv = () => {
   const RUNTIME_VARS = [
     "API_URL",
     "DB_URI",
-    "NEXTAUTH_URL",
-    "NEXTAUTH_SECRET",
+    "BETTER_AUTH_URL",
+    "BETTER_AUTH_SECRET",
     "CLOUDINARY_API_SECRET",
     "RESEND_API_KEY",
     "SENTRY_URL",
