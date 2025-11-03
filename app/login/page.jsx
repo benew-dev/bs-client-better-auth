@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { getCsrfToken } from "next-auth/react";
 import Login from "@/components/auth/Login";
-import { getAuthenticatedUser } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/lib/auth-utils";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";

@@ -1,7 +1,6 @@
 import { Suspense, lazy } from "react";
-import { cookies, headers } from "next/headers";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { captureException } from "@/monitoring/sentry";
 import CartSkeleton from "@/components/skeletons/CartSkeleton";
 import { getAuthenticatedUser } from "@/lib/auth-utils";
 
