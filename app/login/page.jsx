@@ -40,8 +40,7 @@ export const metadata = {
  */
 async function LoginPage() {
   // Vérifier si l'utilisateur est déjà connecté
-  const headersList = await headers();
-  const user = await getAuthenticatedUser(headersList);
+  const user = await getAuthenticatedUser();
 
   if (user) {
     console.log("User is already logged in", {
@@ -54,6 +53,7 @@ async function LoginPage() {
   }
 
   try {
+    const headersList = await headers();
     // Récupérer les en-têtes pour le logging et la sécurité
     const userAgent = headersList.get("user-agent") || "unknown";
     const referer = headersList.get("referer") || "direct";

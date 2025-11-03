@@ -31,9 +31,7 @@ export const metadata = {
 };
 
 const CartPage = async () => {
-  // Vérifier si l'utilisateur est déjà connecté
-  const headersList = await headers();
-  const user = await getAuthenticatedUser(headersList);
+  const user = await getAuthenticatedUser();
 
   if (!user) {
     console.log("User is not logged in");
