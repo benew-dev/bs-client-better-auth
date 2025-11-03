@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { headers } from "next/headers";
+import { getAuth } from "@/lib/auth";
 
 // Configuration
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
 const DEBUG = process.env.NEXT_PUBLIC_DEBUG === "true";
 
-// Routes protégées
+// Routes protégées et publiques (même chose)
 const PROTECTED_PATHS = [
   "/api/:path*",
   "/me/:path*",
@@ -14,6 +15,7 @@ const PROTECTED_PATHS = [
   "/review-order",
   "/confirmation",
 ];
+
 const PUBLIC_PATHS = [
   "/login",
   "/register",
@@ -23,13 +25,11 @@ const PUBLIC_PATHS = [
   "/images/",
 ];
 
-// Cache pour les chemins (micro-optimisation)
 const pathCache = new Map();
 
 export async function middleware(req) {
   const path = req.nextUrl.pathname;
 
-  // Debug conditionnel
   if (!IS_PRODUCTION && DEBUG) {
     console.log("[Middleware] Path:", path);
   }
@@ -59,42 +59,32 @@ export async function middleware(req) {
   }
 
   try {
-    // Configuration du cookie selon l'environnement
-    const cookieName = IS_PRODUCTION
-      ? "__Secure-__Secure-.session_token"
-      : "__Secure-.session_token";
-
-    // Une seule vérification de token
-    const token = await getToken({
-      req,
-      secret: process.env.NEXTAUTH_SECRET,
-      cookieName,
+    // ✅ VALIDATION COMPLÈTE avec Better Auth (Next.js 15.2.0+)
+    const auth = await getAuth();
+    const session = await auth.api.getSession({
+      headers: await headers(),
     });
 
-    if (!token) {
-      // Redirection vers login avec callback
+    if (!session) {
+      // Pas de session valide - rediriger vers login
       const loginUrl = new URL("/login", req.url);
       loginUrl.searchParams.set("callbackUrl", path);
 
-      // Headers de sécurité pour la redirection
       const response = NextResponse.redirect(loginUrl);
       response.headers.set("X-Redirect-Reason", "authentication-required");
 
       return response;
     }
 
-    // Token valide - ajouter des headers de sécurité
+    // Session valide
     const response = NextResponse.next();
     response.headers.set("X-User-Authenticated", "true");
-
-    // Optional: Ajouter l'ID utilisateur pour les logs
-    if (token.sub) {
-      response.headers.set("X-User-Id", token.sub);
+    if (session.user?.id) {
+      response.headers.set("X-User-Id", session.user.id);
     }
 
     return response;
   } catch (error) {
-    // Log d'erreur uniquement en production pour Sentry
     if (IS_PRODUCTION) {
       console.error("[Middleware] Authentication error:", {
         path,
@@ -102,25 +92,15 @@ export async function middleware(req) {
       });
     }
 
-    // Redirection sécurisée vers login en cas d'erreur
     const loginUrl = new URL("/login", req.url);
     loginUrl.searchParams.set("error", "auth_error");
     return NextResponse.redirect(loginUrl);
   }
 }
 
-// Configuration optimisée du matcher
 export const config = {
+  runtime: "nodejs", // ✅ Requis pour Next.js 15.2.0+
   matcher: [
-    /*
-     * Exécuter le middleware uniquement sur :
-     * - Routes protégées
-     * - Pages dynamiques
-     * Exclure :
-     * - Fichiers statiques (_next/static, _next/image)
-     * - API routes d'auth (api/auth)
-     * - Assets publics (favicon, robots, sitemap)
-     */
     "/((?!api/auth|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|images|fonts|public).*)",
   ],
 };

@@ -1,21 +1,45 @@
 "use client";
 
-import { createContext, useState, useCallback, useMemo } from "react";
+import {
+  createContext,
+  useState,
+  useCallback,
+  useMemo,
+  useEffect,
+} from "react";
 import { toast } from "react-toastify";
 import { DECREASE, INCREASE } from "@/helpers/constants";
 import captureClientError from "@/monitoring/sentry";
+import { useSession } from "@/lib/auth-client"; // ✅ Import du hook Better Auth
 
 const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
+  const { data: session } = useSession(); // ✅ Récupérer la session Better Auth
   const [loading, setLoading] = useState(false);
   const [cart, setCart] = useState([]);
   const [cartCount, setCartCount] = useState(0);
   const [cartTotal, setCartTotal] = useState(0);
   const [error, setError] = useState(null);
 
+  // ✅ Charger le panier automatiquement quand la session est disponible
+  useEffect(() => {
+    if (session?.user) {
+      setCartToState();
+    } else {
+      // Réinitialiser le panier si pas de session
+      clearCartOnLogout();
+    }
+  }, [session?.user?.id]); // Dépendance sur l'ID utilisateur
+
   // Récupérer le panier - SIMPLIFIÉ (30 lignes max)
   const setCartToState = useCallback(async () => {
+    // ✅ Vérifier si l'utilisateur est connecté AVANT d'appeler l'API
+    if (!session?.user) {
+      console.log("No session available, skipping cart load");
+      return;
+    }
+
     if (loading) return;
 
     try {
@@ -23,7 +47,7 @@ export const CartProvider = ({ children }) => {
       setError(null);
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s comme AuthContext
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
 
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart`, {
         method: "GET",
@@ -52,14 +76,13 @@ export const CartProvider = ({ children }) => {
               data.message || "Erreur lors de la récupération du panier";
         }
 
-        // Monitoring pour erreurs HTTP - Critique si session expirée
         const httpError = new Error(`HTTP ${res.status}: ${errorMessage}`);
         const isCritical = res.status === 401;
         captureClientError(
           httpError,
           "CartContext",
           "setCartToState",
-          isCritical
+          isCritical,
         );
 
         setError(errorMessage);
@@ -81,10 +104,16 @@ export const CartProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [session?.user, loading]); // ✅ Ajouter session?.user dans les dépendances
 
   // Ajouter au panier - SIMPLIFIÉ (40 lignes max)
   const addItemToCart = async ({ product, quantity = 1 }) => {
+    // ✅ Vérifier la session avant l'action
+    if (!session?.user) {
+      toast.error("Veuillez vous connecter pour ajouter au panier");
+      return;
+    }
+
     try {
       if (!product) {
         const validationError = new Error("Produit invalide");
@@ -92,7 +121,7 @@ export const CartProvider = ({ children }) => {
           validationError,
           "CartContext",
           "addItemToCart",
-          false
+          false,
         );
         toast.error("Produit invalide");
         return;
@@ -142,14 +171,13 @@ export const CartProvider = ({ children }) => {
             toastMessage = data.message || "Erreur lors de l'ajout";
         }
 
-        // Monitoring pour erreurs HTTP - Critique si session expirée
         const httpError = new Error(`HTTP ${res.status}: ${errorMessage}`);
         const isCritical = res.status === 401;
         captureClientError(
           httpError,
           "CartContext",
           "addItemToCart",
-          isCritical
+          isCritical,
         );
 
         if (res.status === 409) {
@@ -180,10 +208,16 @@ export const CartProvider = ({ children }) => {
 
   // Mettre à jour quantité - SIMPLIFIÉ (40 lignes max)
   const updateCart = async (product, action) => {
+    // ✅ Vérifier la session avant l'action
+    if (!session?.user) {
+      toast.error("Veuillez vous connecter");
+      return;
+    }
+
     try {
       if (!product?.id || ![INCREASE, DECREASE].includes(action)) {
         const validationError = new Error(
-          "Données invalides pour mise à jour panier"
+          "Données invalides pour mise à jour panier",
         );
         captureClientError(validationError, "CartContext", "updateCart", false);
         toast.error("Données invalides");
@@ -221,7 +255,6 @@ export const CartProvider = ({ children }) => {
       if (!res.ok) {
         const errorMessage = data.message || "Erreur de mise à jour";
 
-        // Monitoring pour erreurs HTTP - Critique si session expirée
         const httpError = new Error(`HTTP ${res.status}: ${errorMessage}`);
         const isCritical = res.status === 401;
         captureClientError(httpError, "CartContext", "updateCart", isCritical);
@@ -233,7 +266,7 @@ export const CartProvider = ({ children }) => {
       if (data.success) {
         await setCartToState();
         toast.success(
-          action === INCREASE ? "Quantité augmentée" : "Quantité diminuée"
+          action === INCREASE ? "Quantité augmentée" : "Quantité diminuée",
         );
       }
     } catch (error) {
@@ -252,16 +285,22 @@ export const CartProvider = ({ children }) => {
 
   // Supprimer du panier - SIMPLIFIÉ (30 lignes max)
   const deleteItemFromCart = async (id) => {
+    // ✅ Vérifier la session avant l'action
+    if (!session?.user) {
+      toast.error("Veuillez vous connecter");
+      return;
+    }
+
     try {
       if (!id) {
         const validationError = new Error(
-          "ID invalide pour suppression panier"
+          "ID invalide pour suppression panier",
         );
         captureClientError(
           validationError,
           "CartContext",
           "deleteItemFromCart",
-          false
+          false,
         );
         toast.error("ID invalide");
         return;
@@ -283,7 +322,7 @@ export const CartProvider = ({ children }) => {
           },
           signal: controller.signal,
           credentials: "include",
-        }
+        },
       );
 
       clearTimeout(timeoutId);
@@ -292,14 +331,13 @@ export const CartProvider = ({ children }) => {
       if (!res.ok) {
         const errorMessage = data.message || "Erreur de suppression";
 
-        // Monitoring pour erreurs HTTP - Critique si session expirée ou item non trouvé
         const httpError = new Error(`HTTP ${res.status}: ${errorMessage}`);
         const isCritical = [401, 404].includes(res.status);
         captureClientError(
           httpError,
           "CartContext",
           "deleteItemFromCart",
-          isCritical
+          isCritical,
         );
 
         toast.error(errorMessage);
@@ -347,11 +385,9 @@ export const CartProvider = ({ children }) => {
       setCartCount(response.data.cartCount || 0);
       setCartTotal(response.data.cartTotal || 0);
     } catch (error) {
-      // Monitoring pour erreurs de parsing des données
       captureClientError(error, "CartContext", "remoteDataInState", true);
       console.error("Error normalizing cart data:", error.message);
 
-      // Fallback sur des valeurs par défaut
       setCart([]);
       setCartCount(0);
       setCartTotal(0);
@@ -373,7 +409,7 @@ export const CartProvider = ({ children }) => {
       clearError,
       clearCartOnLogout,
     }),
-    [loading, cart, cartCount, cartTotal, error]
+    [loading, cart, cartCount, cartTotal, error, setCartToState], // ✅ Ajouter setCartToState
   );
 
   return (
