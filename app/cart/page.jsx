@@ -1,8 +1,8 @@
 import { Suspense, lazy } from "react";
-import { headers } from "next/headers";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import CartSkeleton from "@/components/skeletons/CartSkeleton";
-import { getAuthenticatedUser } from "@/lib/auth-utils";
+import { captureException } from "@/monitoring/sentry";
 
 // Forcer le rendu dynamique pour cette page
 export const dynamic = "force-dynamic";
@@ -31,23 +31,40 @@ export const metadata = {
 };
 
 const CartPage = async () => {
-  const user = await getAuthenticatedUser();
+  try {
+    const cookie = await cookies();
+    // Vérification de l'authentification côté serveur
+    const sessionCookie =
+      cookie.get("__Secure-.session_token") ||
+      cookie.get("__Secure-__Secure-.session_token");
 
-  if (!user) {
-    console.log("User is not logged in");
-    console.log(user);
-    // Rediriger l'utilisateur déjà connecté vers la page d'accueil
-    return redirect("/login");
+    if (!sessionCookie) {
+      // Rediriger vers la page de connexion avec le retour à la page du panier
+      redirect("/login?callbackUrl=/cart");
+    }
+
+    return (
+      <div itemScope itemType="https://schema.org/ItemList">
+        <meta itemProp="name" content="Shopping Cart" />
+        <Suspense fallback={<CartSkeleton />}>
+          <Cart />
+        </Suspense>
+      </div>
+    );
+  } catch (error) {
+    console.error("Error accessing cart page:", error);
+
+    // Capturer l'erreur dans Sentry
+    captureException(error, {
+      tags: {
+        component: "CartPage",
+        errorType: error.name,
+      },
+    });
+
+    // Rediriger vers la page d'accueil en cas d'erreur
+    redirect("/");
   }
-
-  return (
-    <div itemScope itemType="https://schema.org/ItemList">
-      <meta itemProp="name" content="Shopping Cart" />
-      <Suspense fallback={<CartSkeleton />}>
-        <Cart />
-      </Suspense>
-    </div>
-  );
 };
 
 export default CartPage;
