@@ -41,7 +41,7 @@ const Search = ({ setLoading }) => {
       // Éviter les soumissions multiples
       if (isSubmitting) return;
       setIsSubmitting(true);
-      setLoading?.(true);
+      setLoading(true);
 
       try {
         // Vérification simple avant validation
@@ -70,7 +70,7 @@ const Search = ({ setLoading }) => {
           );
         }
 
-        setLoading?.(false);
+        setLoading(false);
         setIsSubmitting(false);
       }
     },
