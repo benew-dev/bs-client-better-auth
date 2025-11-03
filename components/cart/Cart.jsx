@@ -17,11 +17,13 @@ import EmptyCart from "./components/EmptyCart";
 import CartSummary from "./components/CartSummary";
 import useCartOperations from "../../hooks/useCartOperations";
 import CartSkeleton from "../skeletons/CartSkeleton";
+import { useSession } from "@/lib/auth-client";
 
 const Cart = () => {
   const { loading, cart, cartCount, cartTotal, error, clearError } =
     useContext(CartContext);
 
+  const { data: session } = useSession(); // ✅ Récupérer la session
   const router = useRouter();
 
   const {
@@ -31,6 +33,14 @@ const Cart = () => {
     decreaseQty,
     handleDeleteItem,
   } = useCartOperations();
+
+  // ✅ NOUVEAU : Rediriger vers login si pas de session
+  useEffect(() => {
+    if (!session?.user) {
+      console.log("No session detected on cart page, redirecting to login");
+      router.push("/login?callbackUrl=/cart");
+    }
+  }, [session?.user, router]);
 
   useEffect(() => {
     // Nettoyage de l'erreur si elle existe
