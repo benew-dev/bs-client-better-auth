@@ -46,7 +46,7 @@ const ItemCart = memo(
       <div className="group relative">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 py-4 transition-all duration-200 hover:bg-gray-50 rounded-lg p-2">
           <div className="w-full sm:w-2/5 flex">
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <Link
                 href={`/product/${cartItem?.productId}`}
                 className="block relative h-24 w-24 rounded border overflow-hidden transition-shadow hover:shadow-md"

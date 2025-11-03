@@ -130,7 +130,7 @@ const Cart = () => {
 // Composants extraits pour une meilleure organisation
 
 const CartHeader = memo(({ cartCount }) => (
-  <section className="py-5 sm:py-7 bg-gradient-to-r from-blue-50 to-indigo-50">
+  <section className="py-5 sm:py-7 bg-linear-to-r from-blue-50 to-indigo-50">
     <div className="container max-w-6xl mx-auto px-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl md:text-3xl font-semibold text-gray-800">
