@@ -1,15 +1,17 @@
-import { memo } from "react";
-// import { toast } from "react-toastify";
+import { memo, useCallback, useContext } from "react";
+import { toast } from "react-toastify";
 import Link from "next/link";
 import Image from "next/image";
 
-// import CartContext from "@/context/CartContext";
-// import { INCREASE } from "@/helpers/constants";
-// import AuthContext from "@/context/AuthContext";
+import CartContext from "@/context/CartContext";
+import { INCREASE } from "@/helpers/constants";
+import { useSession } from "@/lib/auth-client";
 
 const ProductItem = memo(({ product }) => {
-  // const { addItemToCart, updateCart, cart } = useContext(CartContext);
-  // const { user } = useContext(AuthContext);
+  const { data: session } = useSession();
+  const user = session?.user;
+
+  const { addItemToCart, updateCart, cart } = useContext(CartContext);
 
   // Vérification de sécurité pour s'assurer que product est un objet valide
   if (!product || typeof product !== "object") {
@@ -27,33 +29,33 @@ const ProductItem = memo(({ product }) => {
   const imageUrl = product.images?.[0]?.url || "/images/default_product.png";
 
   // Optimisation avec useCallback pour éviter les recréations à chaque rendu
-  // const addToCartHandler = useCallback(
-  //   (e) => {
-  //     e.preventDefault();
+  const addToCartHandler = useCallback(
+    (e) => {
+      e.preventDefault();
 
-  //     try {
-  //       if (!user) {
-  //         return toast.error(
-  //           "Connectez-vous pour ajouter des articles à votre panier !"
-  //         );
-  //       }
+      try {
+        if (!user) {
+          return toast.error(
+            "Connectez-vous pour ajouter des articles à votre panier !",
+          );
+        }
 
-  //       const isProductInCart = cart.find((i) => i?.productId === productId);
+        const isProductInCart = cart.find((i) => i?.productId === productId);
 
-  //       if (isProductInCart) {
-  //         updateCart(isProductInCart, INCREASE);
-  //       } else {
-  //         addItemToCart({
-  //           product: productId,
-  //         });
-  //       }
-  //     } catch (error) {
-  //       toast.error("Impossible d'ajouter au panier. Veuillez réessayer.");
-  //       console.error("Erreur d'ajout au panier:", error);
-  //     }
-  //   },
-  //   [productId]
-  // );
+        if (isProductInCart) {
+          updateCart(isProductInCart, INCREASE);
+        } else {
+          addItemToCart({
+            product: productId,
+          });
+        }
+      } catch (error) {
+        toast.error("Impossible d'ajouter au panier. Veuillez réessayer.");
+        console.error("Erreur d'ajout au panier:", error);
+      }
+    },
+    [productId],
+  );
 
   return (
     <article className="border border-gray-200 overflow-hidden bg-white shadow-xs rounded-sm mb-5">
@@ -140,7 +142,7 @@ const ProductItem = memo(({ product }) => {
                   ${
                     inStock ? "bg-blue-600" : "bg-gray-400 cursor-not-allowed"
                   }`}
-                // onClick={(e) => inStock && addToCartHandler(e)}
+                onClick={(e) => inStock && addToCartHandler(e)}
                 aria-label={
                   inStock ? "Ajouter au panier" : "Produit indisponible"
                 }

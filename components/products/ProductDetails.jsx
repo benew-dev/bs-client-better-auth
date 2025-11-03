@@ -1,21 +1,28 @@
 "use client";
 
-import { useState, useEffect, useCallback, memo, useMemo } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  memo,
+  useMemo,
+  useContext,
+} from "react";
 import dynamic from "next/dynamic";
 import { toast } from "react-toastify";
 import Image from "next/image";
 import Link from "next/link";
 
-// import AuthContext from "@/context/AuthContext";
-// import CartContext from "@/context/CartContext";
+import CartContext from "@/context/CartContext";
 import { isArrayEmpty } from "@/helpers/helpers";
-// import { INCREASE } from "@/helpers/constants";
+import { INCREASE } from "@/helpers/constants";
 
 // Pour la sécurité - nécessite d'installer cette dépendance
 // npm install dompurify
 import DOMPurify from "dompurify";
 import { Share2, ShoppingCart, Star, Truck } from "lucide-react";
 import { useSwipeable } from "react-swipeable";
+import { useSession } from "@/lib/auth-client";
 
 // Chargement dynamique des composants
 const BreadCrumbs = dynamic(() => import("@/components/layouts/BreadCrumbs"), {
@@ -581,15 +588,17 @@ const RelatedProductsCarousel = memo(function RelatedProductsCarousel({
 
 // Composant principal
 function ProductDetails({ product, sameCategoryProducts }) {
-  // const { user } = useContext(AuthContext);
-  // const { addItemToCart, updateCart, cart, error, clearError } =
-  //   useContext(CartContext);
+  const { data: session } = useSession();
+  const user = session?.user;
+
+  const { addItemToCart, updateCart, cart, error, clearError } =
+    useContext(CartContext);
 
   // État pour l'image sélectionnée
   const [selectedImage, setSelectedImage] = useState(null);
 
   // État pour le feedback d'ajout au panier
-  // const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
 
   // Définir l'image sélectionnée au chargement ou quand le produit change
   useEffect(() => {
@@ -601,12 +610,12 @@ function ProductDetails({ product, sameCategoryProducts }) {
   }, [product]);
 
   // Handle auth context updates
-  // useEffect(() => {
-  //   if (error) {
-  //     toast.error(error);
-  //     clearError();
-  //   }
-  // }, [error, clearError]);
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+      clearError();
+    }
+  }, [error, clearError]);
 
   // Vérifier si le produit est en stock - memoized
   const inStock = useMemo(() => {
@@ -636,51 +645,51 @@ function ProductDetails({ product, sameCategoryProducts }) {
   }, [product]);
 
   // Gérer l'ajout au panier
-  // const handleAddToCart = useCallback(() => {
-  //   // Sécurité et validation
-  //   if (!product || !product._id) {
-  //     toast.error("Produit invalide");
-  //     return;
-  //   }
+  const handleAddToCart = useCallback(() => {
+    // Sécurité et validation
+    if (!product || !product._id) {
+      toast.error("Produit invalide");
+      return;
+    }
 
-  //   if (!user) {
-  //     toast.info(
-  //       "Veuillez vous connecter pour ajouter des articles à votre panier"
-  //     );
-  //     return;
-  //   }
+    if (!user) {
+      toast.info(
+        "Veuillez vous connecter pour ajouter des articles à votre panier",
+      );
+      return;
+    }
 
-  //   if (!inStock) {
-  //     toast.warning("Ce produit est en rupture de stock");
-  //     return;
-  //   }
+    if (!inStock) {
+      toast.warning("Ce produit est en rupture de stock");
+      return;
+    }
 
-  //   if (isAddingToCart) return; // Éviter les clics multiples
+    if (isAddingToCart) return; // Éviter les clics multiples
 
-  //   setIsAddingToCart(true);
+    setIsAddingToCart(true);
 
-  //   try {
-  //     const isProductInCart = cart.find((i) => i?.productId === product._id);
+    try {
+      const isProductInCart = cart.find((i) => i?.productId === product._id);
 
-  //     if (isProductInCart) {
-  //       updateCart(isProductInCart, INCREASE);
-  //       toast.success("Quantité mise à jour dans votre panier");
-  //     } else {
-  //       addItemToCart({
-  //         product: product._id,
-  //       });
-  //       toast.success("Produit ajouté à votre panier");
-  //     }
-  //   } catch (error) {
-  //     console.error("Error adding item to cart:", error);
-  //     toast.error("Erreur lors de l'ajout au panier. Veuillez réessayer.");
-  //   } finally {
-  //     // Ajouter un délai minimum pour éviter le flickering de l'UI
-  //     setTimeout(() => {
-  //       setIsAddingToCart(false);
-  //     }, 500);
-  //   }
-  // }, [product, user, cart, inStock, addItemToCart, updateCart, isAddingToCart]);
+      if (isProductInCart) {
+        updateCart(isProductInCart, INCREASE);
+        toast.success("Quantité mise à jour dans votre panier");
+      } else {
+        addItemToCart({
+          product: product._id,
+        });
+        toast.success("Produit ajouté à votre panier");
+      }
+    } catch (error) {
+      console.error("Error adding item to cart:", error);
+      toast.error("Erreur lors de l'ajout au panier. Veuillez réessayer.");
+    } finally {
+      // Ajouter un délai minimum pour éviter le flickering de l'UI
+      setTimeout(() => {
+        setIsAddingToCart(false);
+      }, 500);
+    }
+  }, [product, user, cart, inStock, addItemToCart, updateCart, isAddingToCart]);
 
   // Fonction pour partager le produit
   const handleShare = useCallback(() => {
@@ -776,8 +785,8 @@ function ProductDetails({ product, sameCategoryProducts }) {
             <ProductInfo
               product={product}
               inStock={inStock}
-              // onAddToCart={handleAddToCart}
-              // isAddingToCart={isAddingToCart}
+              onAddToCart={handleAddToCart}
+              isAddingToCart={isAddingToCart}
               onShare={handleShare}
             />
           </div>
