@@ -42,6 +42,7 @@ async function LoginPage() {
   // Vérifier si l'utilisateur est déjà connecté
   const headersList = await headers();
   const user = await getAuthenticatedUser(headersList);
+
   if (user) {
     console.log("User is already logged in", {
       user: user,

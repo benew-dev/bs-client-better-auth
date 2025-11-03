@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  // useContext,
+  useContext,
   useEffect,
   useState,
   useCallback,
@@ -10,13 +10,11 @@ import {
 } from "react";
 import Link from "next/link";
 import Image from "next/image";
-// import * as Sentry from "@sentry/nextjs";
-// import CartContext from "@/context/CartContext";
-// import { signOut, useSession } from "next-auth/react";
-// import AuthContext from "@/context/AuthContext";
+import * as Sentry from "@sentry/nextjs";
 import { Menu, ShoppingCart, User, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { signOut, useSession } from "@/lib/auth-client";
+import CartContext from "@/context/CartContext";
 
 // Chargement dynamique optimisé du composant Search
 const Search = dynamic(() => import("./Search"), {
@@ -27,7 +25,6 @@ const Search = dynamic(() => import("./Search"), {
 });
 
 // Constantes pour éviter les recréations
-// const CART_LOAD_DELAY = 500;
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
 
 // ✅ Bouton panier
@@ -114,7 +111,7 @@ const UserDropdown = memo(({ user }) => {
             </Link>
           ))}
           <button
-            // onClick={() => signOut({ callbackUrl: "/login" })}
+            onClick={() => signOut({ callbackUrl: "/login" })}
             className="block cursor-pointer w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
             role="menuitem"
           >
@@ -131,10 +128,11 @@ UserDropdown.displayName = "UserDropdown";
 const Header = () => {
   const { data: session } = useSession();
   const user = session?.user;
-  // const { setCartToState, cartCount, clearCartOnLogout } =
-  //   useContext(CartContext);
+  const { setCartToState, cartCount, clearCartOnLogout } =
+    useContext(CartContext);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  // const [isLoadingCart, setIsLoadingCart] = useState(false);
+  // eslint-disable-next-line no-unused-vars
+  const [isLoadingCart, setIsLoadingCart] = useState(false);
 
   // Refs pour gérer les timeouts
   const loadCartTimeoutRef = useRef(null);
@@ -142,7 +140,7 @@ const Header = () => {
   const mobileMenuTimeoutRef = useRef(null);
 
   // Flag pour éviter les chargements multiples
-  // const isCartLoadingRef = useRef(false);
+  const isCartLoadingRef = useRef(false);
 
   // Cleanup des timeouts au démontage
   useEffect(() => {
@@ -155,65 +153,55 @@ const Header = () => {
   }, []);
 
   // Fonction loadCart optimisée avec debounce
-  // const loadCart = useCallback(async () => {
-  //   if (isCartLoadingRef.current) return;
+  const loadCart = useCallback(async () => {
+    if (isCartLoadingRef.current) return;
 
-  //   try {
-  //     isCartLoadingRef.current = true;
-  //     setIsLoadingCart(true);
-  //     await setCartToState();
-  //   } catch (error) {
-  //     if (!IS_PRODUCTION) {
-  //       console.error("Error loading cart:", error);
-  //     }
-  //     Sentry.captureException(error, {
-  //       tags: {
-  //         component: "Header",
-  //         action: "loadCart",
-  //       },
-  //       level: "warning",
-  //     });
-  //   } finally {
-  //     setIsLoadingCart(false);
-  //     isCartLoadingRef.current = false;
-  //   }
-  // }, [setCartToState]);
+    try {
+      isCartLoadingRef.current = true;
+      setIsLoadingCart(true);
+      await setCartToState();
+    } catch (error) {
+      if (!IS_PRODUCTION) {
+        console.error("Error loading cart:", error);
+      }
+      Sentry.captureException(error, {
+        tags: {
+          component: "Header",
+          action: "loadCart",
+        },
+        level: "warning",
+      });
+    } finally {
+      setIsLoadingCart(false);
+      isCartLoadingRef.current = false;
+    }
+  }, [setCartToState]);
 
   // useEffect optimisé pour la gestion de session
-  // useEffect(() => {
-  //   let mounted = true;
+  useEffect(() => {
+    let mounted = true;
 
-  //   if (data && mounted) {
-  //     try {
-  //       setUser(data?.user);
+    if (session && mounted) {
+      try {
+        if (loadCartTimeoutRef.current) {
+          clearTimeout(loadCartTimeoutRef.current);
+        }
 
-  //       if (loadCartTimeoutRef.current) {
-  //         clearTimeout(loadCartTimeoutRef.current);
-  //       }
+        loadCart();
+      } catch (error) {
+        Sentry.captureException(error, {
+          tags: {
+            component: "Header",
+            action: "initUserData",
+          },
+        });
+      }
+    }
 
-  //       if (data?.isNewLogin) {
-  //         loadCartTimeoutRef.current = setTimeout(() => {
-  //           if (mounted) loadCart();
-  //         }, CART_LOAD_DELAY);
-  //       } else {
-  //         loadCart();
-  //       }
-  //     } catch (error) {
-  //       Sentry.captureException(error, {
-  //         tags: {
-  //           component: "Header",
-  //           action: "initUserData",
-  //         },
-  //       });
-  //     }
-  //   } else if (data === null && mounted) {
-  //     setUser(null);
-  //   }
-
-  //   return () => {
-  //     mounted = false;
-  //   };
-  // }, [data, setUser, loadCart]);
+    return () => {
+      mounted = false;
+    };
+  }, [loadCart]);
 
   // Fermer le menu mobile si on clique en dehors
   useEffect(() => {
@@ -252,25 +240,20 @@ const Header = () => {
   }, [mobileMenuOpen]);
 
   // handleSignOut optimisé
-  const handleSignOut = useCallback(
-    async () => {
-      try {
-        await signOut({ callbackUrl: "/login" });
+  const handleSignOut = useCallback(async () => {
+    try {
+      await signOut({ callbackUrl: "/login" });
 
-        signOutTimeoutRef.current = setTimeout(() => {
-          window.location.href = "/login";
-        }, 100);
-      } catch (error) {
-        if (!IS_PRODUCTION) {
-          console.error("Erreur lors de la déconnexion:", error);
-        }
+      signOutTimeoutRef.current = setTimeout(() => {
         window.location.href = "/login";
+      }, 100);
+    } catch (error) {
+      if (!IS_PRODUCTION) {
+        console.error("Erreur lors de la déconnexion:", error);
       }
-    },
-    [
-      /*clearCartOnLogout*/
-    ],
-  );
+      window.location.href = "/login";
+    }
+  }, [clearCartOnLogout]);
 
   const closeMobileMenu = () => {
     setMobileMenuOpen(false);
@@ -312,11 +295,11 @@ const Header = () => {
                   title="Accéder au panier"
                 >
                   <ShoppingCart className="text-gray-400 w-5" />
-                  {/* {cartCount > 0 && (
+                  {cartCount > 0 && (
                     <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
                       {cartCount}
                     </span>
-                  )} */}
+                  )}
                 </Link>
 
                 {/* Photo de profil Mobile (remplace hamburger) */}
@@ -368,7 +351,7 @@ const Header = () => {
 
           {/* User navigation - Desktop */}
           <div className="hidden md:flex items-center space-x-3">
-            {/* {user && <CartButton cartCount={cartCount} />} */}
+            {user && <CartButton cartCount={cartCount} />}
 
             {!user ? (
               <Link

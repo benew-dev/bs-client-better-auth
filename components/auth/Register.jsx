@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 import { CheckCircle, LoaderCircle } from "lucide-react";
 import captureClientError from "@/monitoring/sentry";
 import { signUp } from "@/lib/auth-client";
+import { validateRegister } from "@/helpers/validation";
 
 const Register = () => {
   // États du formulaire
@@ -39,7 +40,6 @@ const Register = () => {
         window.removeEventListener("offline", handleOffline);
       };
     } catch (error) {
-      // Monitoring : Erreur de détection de connexion
       captureClientError(error, "Register", "connectionDetection", false);
     }
   }, []);
@@ -53,12 +53,20 @@ const Register = () => {
       [name]: value,
     }));
 
+    // Nettoyer l'erreur du champ modifié
+    if (errors[name]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+
     // Calcul de la force du mot de passe
     if (name === "password") {
       try {
         calculatePasswordStrength(value);
       } catch (error) {
-        // Monitoring : Erreur calcul force mot de passe
         captureClientError(
           error,
           "Register",
@@ -109,57 +117,110 @@ const Register = () => {
     }
 
     setIsSubmitting(true);
+    setErrors({}); // Réinitialiser les erreurs
 
     try {
-      // Validation côté client basique
-      if (
-        !formData.name ||
-        !formData.email ||
-        !formData.password ||
-        !formData.phone
-      ) {
-        const validationError = new Error("Champs obligatoires manquants");
+      // ===== VALIDATION YUP CÔTÉ CLIENT =====
+      const validation = await validateRegister(formData);
+
+      if (!validation.isValid) {
+        // Afficher les erreurs de validation
+        setErrors(validation.errors);
+
+        // Afficher le premier message d'erreur
+        const firstError = Object.values(validation.errors)[0];
+        toast.error(firstError);
+
+        // Monitoring des erreurs de validation
         captureClientError(
-          validationError,
+          new Error("Validation échouée lors de l'inscription"),
           "Register",
           "clientValidation",
           false,
           {
-            missingFields: {
-              name: !formData.name,
-              email: !formData.email,
-              password: !formData.password,
-              phone: !formData.phone,
+            validationErrors: validation.errors,
+            formData: {
+              hasName: !!formData.name,
+              hasEmail: !!formData.email,
+              hasPhone: !!formData.phone,
+              hasPassword: !!formData.password,
+              emailDomain: formData.email ? formData.email.split("@")[1] : null,
             },
           },
         );
-        toast.error("Tous les champs sont obligatoires");
+
         setIsSubmitting(false);
         return;
       }
 
-      // Inscription avec Better Auth
+      // ===== INSCRIPTION AVEC BETTER-AUTH =====
       const { data, error } = await signUp.email({
         email: formData.email,
         password: formData.password,
         name: formData.name,
         phone: formData.phone,
-        callbackURL: "/", // A URL to redirect to after the user verifies their email (optional)
+        callbackURL: "/",
       });
 
       if (error) {
-        toast.error("Erreur lors de l'inscription");
+        // Gérer les différents types d'erreurs du serveur
+        let errorMessage = "Erreur lors de l'inscription";
+
+        if (error.message) {
+          if (
+            error.message.toLowerCase().includes("duplicate") ||
+            error.message.toLowerCase().includes("already exists")
+          ) {
+            errorMessage =
+              "Cet email est déjà utilisé. Veuillez vous connecter ou utiliser un autre email.";
+          } else if (error.message.toLowerCase().includes("validation")) {
+            errorMessage =
+              "Données invalides. Veuillez vérifier vos informations.";
+          } else {
+            errorMessage = error.message;
+          }
+        }
+
+        toast.error(errorMessage);
+
+        // Monitoring de l'erreur serveur
+        captureClientError(
+          new Error(`Erreur serveur lors de l'inscription: ${error.message}`),
+          "Register",
+          "serverError",
+          true,
+          {
+            errorCode: error.code,
+            errorMessage: error.message,
+            formData: {
+              hasName: !!formData.name,
+              hasEmail: !!formData.email,
+              hasPhone: !!formData.phone,
+              emailDomain: formData.email ? formData.email.split("@")[1] : null,
+            },
+          },
+        );
+
         setIsSubmitting(false);
         return;
       }
 
       if (data) {
         toast.success("Inscription réussie !");
-        // Rediriger vers login
-        window.location.href = "/login";
+
+        // Monitoring du succès
+        console.log("✅ Inscription réussie pour:", {
+          userId: data.user?.id,
+          email: data.user?.email,
+        });
+
+        // Redirection vers login après un court délai
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 1500);
       }
     } catch (error) {
-      // Monitoring : Erreurs techniques
+      // Monitoring : Erreurs techniques inattendues
       let isCritical = true;
       let errorType = "unknown";
 
@@ -204,7 +265,7 @@ const Register = () => {
     return "Fort";
   };
 
-  // ✅ NOUVEAU: Écran de succès après inscription
+  // ✅ ÉCRAN DE SUCCÈS APRÈS INSCRIPTION
   if (registrationSuccess && registrationData) {
     return (
       <div className="max-w-md w-full mx-auto mt-8 mb-16 p-4 md:p-7 rounded-lg bg-white shadow-lg">
@@ -302,7 +363,7 @@ const Register = () => {
             placeholder="Votre nom complet"
             value={formData.name}
             onChange={handleChange}
-            disabled={isSubmitting /*|| contextLoading*/}
+            disabled={isSubmitting}
             aria-invalid={errors.name ? "true" : "false"}
             aria-describedby={errors.name ? "name-error" : undefined}
             autoComplete="name"
@@ -335,7 +396,7 @@ const Register = () => {
             placeholder="Votre numéro de téléphone"
             value={formData.phone}
             onChange={handleChange}
-            disabled={isSubmitting /*|| contextLoading*/}
+            disabled={isSubmitting}
             aria-invalid={errors.phone ? "true" : "false"}
             aria-describedby={errors.phone ? "phone-error" : undefined}
             autoComplete="tel"
@@ -351,7 +412,7 @@ const Register = () => {
             </p>
           )}
           <p className="mt-1 text-xs text-gray-500">
-            Format: numéro à 10 chiffres sans espaces
+            Format: numéro valide (ex: +25377123456)
           </p>
         </div>
 
@@ -371,7 +432,7 @@ const Register = () => {
             placeholder="Votre adresse email"
             value={formData.email}
             onChange={handleChange}
-            disabled={isSubmitting /*|| contextLoading*/}
+            disabled={isSubmitting}
             aria-invalid={errors.email ? "true" : "false"}
             aria-describedby={errors.email ? "email-error" : undefined}
             autoComplete="email"
@@ -404,7 +465,7 @@ const Register = () => {
             placeholder="Créez un mot de passe sécurisé"
             value={formData.password}
             onChange={handleChange}
-            disabled={isSubmitting /*|| contextLoading*/}
+            disabled={isSubmitting}
             minLength={8}
             aria-invalid={errors.password ? "true" : "false"}
             aria-describedby={errors.password ? "password-error" : undefined}
@@ -438,7 +499,8 @@ const Register = () => {
           )}
 
           <p className="mt-2 text-xs text-gray-500">
-            Au moins 8 caractères avec majuscules, minuscules et chiffres
+            Au moins 8 caractères avec majuscules, minuscules, chiffres et
+            caractères spéciaux
           </p>
         </div>
 
@@ -476,10 +538,10 @@ const Register = () => {
         {/* Bouton de soumission */}
         <button
           type="submit"
-          className={`px-4 py-3 text-center w-full inline-flex justify-center items-center text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors ${isSubmitting /*|| contextLoading*/ ? "opacity-70 cursor-not-allowed" : ""}`}
-          disabled={isSubmitting /*|| contextLoading*/ || isOffline}
+          className={`px-4 py-3 text-center w-full inline-flex justify-center items-center text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors ${isSubmitting ? "opacity-70 cursor-not-allowed" : ""}`}
+          disabled={isSubmitting || isOffline}
         >
-          {isSubmitting /*|| contextLoading*/ ? (
+          {isSubmitting ? (
             <>
               <LoaderCircle className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" />
               Création en cours...
