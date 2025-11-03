@@ -157,6 +157,8 @@ export const POST = withCartRateLimit(
       // Vérifier l'authentification
       const user = await isAuthenticatedUser();
 
+      console.log("user", user);
+
       if (!user) {
         return NextResponse.json(
           {
