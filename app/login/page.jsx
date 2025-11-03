@@ -42,6 +42,9 @@ async function LoginPage() {
   // Vérifier si l'utilisateur est déjà connecté
   const { success, session } = await verifySession();
 
+  console.log("Success", success);
+  console.log("session", session);
+
   if (session && success) {
     console.log("An user is already logged in");
     // Rediriger l'utilisateur déjà connecté vers la page d'accueil
