@@ -36,7 +36,7 @@ export const GET = withIntelligentRateLimit(
       await dbConnect();
 
       // Récupérer le panier avec les produits populés
-      const cartItems = await Cart.find({ user: user._id })
+      const cartItems = await Cart.find({ user: user.id })
         .populate("product", "name price stock images isActive")
         .lean();
 
@@ -157,8 +157,6 @@ export const POST = withCartRateLimit(
       // Vérifier l'authentification
       const user = await isAuthenticatedUser();
 
-      console.log("user", user);
-
       if (!user) {
         return NextResponse.json(
           {
@@ -266,7 +264,7 @@ export const POST = withCartRateLimit(
 
       // Vérifier si le produit est déjà dans le panier
       const existingCartItem = await Cart.findOne({
-        user: user._id,
+        user: user.id,
         product: productId,
       });
 
@@ -287,7 +285,7 @@ export const POST = withCartRateLimit(
         // Créer un nouvel item
         isNewItem = true;
         updatedItem = await Cart.create({
-          user: user._id,
+          user: user.id,
           product: productId,
           quantity: Math.min(quantity, product.stock),
           price: product.price,
@@ -296,7 +294,7 @@ export const POST = withCartRateLimit(
       }
 
       // Récupérer le panier mis à jour
-      const cartItems = await Cart.find({ user: user._id })
+      const cartItems = await Cart.find({ user: user.id })
         .populate("product", "name price stock images isActive")
         .lean();
 
@@ -322,7 +320,7 @@ export const POST = withCartRateLimit(
 
       // Log de sécurité pour audit
       console.log("🔒 Security event - Cart item added:", {
-        userId: user._id,
+        userId: user.id,
         productId,
         quantity: updatedItem.quantity,
         isNewItem,
@@ -456,7 +454,7 @@ export const PUT = withCartRateLimit(
       // Récupérer l'item du panier
       const cartItem = await Cart.findOne({
         _id: cartItemId,
-        user: user._id,
+        user: user.id,
       }).populate("product", "stock isActive name price");
 
       if (!cartItem) {
@@ -523,7 +521,7 @@ export const PUT = withCartRateLimit(
       }
 
       // Récupérer le panier mis à jour
-      const cartItems = await Cart.find({ user: user._id })
+      const cartItems = await Cart.find({ user: user.id })
         .populate("product", "name price stock images isActive")
         .lean();
 
@@ -549,7 +547,7 @@ export const PUT = withCartRateLimit(
 
       // Log de sécurité pour audit
       console.log("🔒 Security event - Cart quantity updated:", {
-        userId: user._id,
+        userId: user.id,
         cartItemId,
         action,
         previousQuantity,
