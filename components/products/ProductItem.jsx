@@ -5,12 +5,8 @@ import Image from "next/image";
 
 import CartContext from "@/context/CartContext";
 import { INCREASE } from "@/helpers/constants";
-import { useSession } from "@/lib/auth-client";
 
-const ProductItem = memo(({ product }) => {
-  const { data: session } = useSession();
-  const user = session?.user;
-
+const ProductItem = memo(({ product, user }) => {
   const { addItemToCart, updateCart, cart } = useContext(CartContext);
 
   // Vérification de sécurité pour s'assurer que product est un objet valide

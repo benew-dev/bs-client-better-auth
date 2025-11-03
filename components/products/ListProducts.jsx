@@ -10,11 +10,12 @@ import {
   ProductItemSkeleton,
 } from "../skeletons/ListProductsSkeleton";
 import { SearchX } from "lucide-react";
+import { useSession } from "@/lib/auth-client";
 
 // Import dynamique des composants
 const CustomPagination = dynamic(
   () => import("@/components/layouts/CustomPagination"),
-  { ssr: true }
+  { ssr: true },
 );
 
 const Filters = dynamic(() => import("../layouts/Filters"), {
@@ -28,6 +29,9 @@ const ProductItem = dynamic(() => import("./ProductItem"), {
 });
 
 const ListProducts = ({ data, categories }) => {
+  const { data: session } = useSession();
+  const user = session?.user;
+  console.log("user in ListProducts", user);
   // États locaux
   const [localLoading, setLocalLoading] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -205,7 +209,7 @@ const ListProducts = ({ data, categories }) => {
                       key={product?._id || `product-${Math.random()}`}
                       fallback={<ProductItemSkeleton />}
                     >
-                      <ProductItem product={product} />
+                      <ProductItem product={product} user={user} />
                     </Suspense>
                   ))}
                 </div>

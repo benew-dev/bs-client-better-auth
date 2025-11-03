@@ -65,10 +65,10 @@ export const DELETE = withCartRateLimit(
       }
 
       // Vérifier la propriété
-      if (cartItem.user.toString() !== user._id.toString()) {
+      if (cartItem.user.toString() !== user.id.toString()) {
         // Log de sécurité pour tentative de suppression non autorisée
         console.warn("🚨 Unauthorized cart deletion attempt:", {
-          userId: user._id,
+          userId: user.id,
           cartItemId: id,
           cartItemOwnerId: cartItem.user,
           timestamp: new Date().toISOString(),
@@ -99,7 +99,7 @@ export const DELETE = withCartRateLimit(
       await Cart.findByIdAndDelete(id);
 
       // Récupérer le panier mis à jour avec les produits populés
-      const cartItems = await Cart.find({ user: user._id })
+      const cartItems = await Cart.find({ user: user.id })
         .populate("product", "name price stock images isActive")
         .sort({ createdAt: -1 })
         .lean();
@@ -141,7 +141,7 @@ export const DELETE = withCartRateLimit(
 
       // Log de sécurité pour audit
       console.log("🔒 Security event - Cart item deleted:", {
-        userId: user._id,
+        userId: user.id,
         cartItemId: id,
         deletedItem: deletedItemInfo,
         remainingItems: cartCount,
