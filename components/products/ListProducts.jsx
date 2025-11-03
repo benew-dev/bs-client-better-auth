@@ -31,7 +31,6 @@ const ProductItem = dynamic(() => import("./ProductItem"), {
 const ListProducts = ({ data, categories }) => {
   const { data: session } = useSession();
   const user = session?.user;
-  console.log("user in ListProducts", user);
   // États locaux
   const [localLoading, setLocalLoading] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);

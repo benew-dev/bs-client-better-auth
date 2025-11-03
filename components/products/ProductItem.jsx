@@ -31,6 +31,7 @@ const ProductItem = memo(({ product, user }) => {
 
       try {
         if (!user) {
+          console.log("User in ProductItem", user);
           return toast.error(
             "Connectez-vous pour ajouter des articles à votre panier !",
           );
