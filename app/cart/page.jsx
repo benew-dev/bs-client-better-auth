@@ -36,6 +36,8 @@ const CartPage = async () => {
   const user = await getAuthenticatedUser(headersList);
 
   if (!user) {
+    console.log("User is not logged in");
+    console.log(user);
     // Rediriger l'utilisateur déjà connecté vers la page d'accueil
     return redirect("/login");
   }
