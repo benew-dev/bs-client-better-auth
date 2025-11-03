@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { getCsrfToken } from "next-auth/react";
 import Login from "@/components/auth/Login";
-import { getAuthenticatedUser } from "@/lib/auth-utils";
+import { verifySession } from "@/lib/auth-utils";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -40,16 +40,12 @@ export const metadata = {
  */
 async function LoginPage() {
   // Vérifier si l'utilisateur est déjà connecté
-  const user = await getAuthenticatedUser();
+  const { success, session } = await verifySession();
 
-  if (user) {
-    console.log("User is already logged in", {
-      user: user,
-      role: user.role,
-    });
-    // Rediriger vers la page d'accueil ou tableau de bord selon le rôle
-    console.log("User connected, redirecting to home page");
-    return redirect("/"); // Ajouter cette ligne
+  if (session && success) {
+    console.log("An user is already logged in");
+    // Rediriger l'utilisateur déjà connecté vers la page d'accueil
+    return redirect("/");
   }
 
   try {
