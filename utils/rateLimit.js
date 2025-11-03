@@ -13,7 +13,6 @@
  * @date 2025-10-06
  */
 
-import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
 
 /**
@@ -515,6 +514,8 @@ export function withIntelligentRateLimit(handler, options = {}) {
       // Récupérer les infos utilisateur
       let userInfo = { ip };
 
+      // Dans withIntelligentRateLimit, remplacer cette section :
+
       // Si pas de fonction extractUserInfo fournie, essayer d'extraire le JWT par défaut
       if (!extractUserInfo || typeof extractUserInfo !== "function") {
         // Extraction par défaut du JWT pour les routes qui requireAuth
@@ -525,26 +526,24 @@ export function withIntelligentRateLimit(handler, options = {}) {
 
         if (strategy.requireAuth) {
           try {
-            const cookieName =
-              process.env.NODE_ENV === "production"
-                ? "__Secure-next-auth.session-token"
-                : "next-auth.session-token";
+            // ✅ REMPLACER getToken de next-auth par Better Auth
+            const { getSessionFromRequest } = await import(
+              "@/lib/auth-api-utils"
+            );
+            const session = await getSessionFromRequest(req);
 
-            const token = await getToken({
-              req,
-              secret: process.env.NEXTAUTH_SECRET,
-              cookieName,
-            });
-
-            if (token?.user) {
+            if (session?.user) {
               userInfo = {
                 ...userInfo,
-                userId: token.user._id || token.user.id || token.sub,
-                email: token.user.email,
+                userId: session.user.id,
+                email: session.user.email,
               };
             }
           } catch (error) {
-            console.error("[RATE_LIMIT] Error extracting JWT:", error.message);
+            console.error(
+              "[RATE_LIMIT] Error extracting session:",
+              error.message,
+            );
           }
         }
       } else {
