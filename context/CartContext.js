@@ -26,16 +26,33 @@ export const CartProvider = ({ children }) => {
   // ✅ Flag pour éviter les chargements multiples
   const isLoadingRef = useRef(false);
   const hasLoadedRef = useRef(false);
+  const wasLoggedInRef = useRef(false); // ✅ Nouveau : tracker si l'utilisateur était connecté
 
-  // ✅ Charger le panier automatiquement UNE SEULE FOIS quand la session est disponible
+  // ✅ Charger le panier automatiquement quand la session est disponible
   useEffect(() => {
     if (session?.user && !hasLoadedRef.current) {
       hasLoadedRef.current = true;
+      wasLoggedInRef.current = true; // ✅ Marquer comme connecté
       setCartToState();
     } else if (!session?.user) {
       // Réinitialiser quand l'utilisateur se déconnecte
       clearCartOnLogout();
       hasLoadedRef.current = false;
+
+      // ✅ NOUVEAU : Si l'utilisateur était connecté et ne l'est plus
+      // ET qu'on est sur une page protégée, rediriger vers login
+      if (wasLoggedInRef.current) {
+        wasLoggedInRef.current = false;
+
+        // Vérifier si on est sur une page protégée
+        const protectedPaths = ["/cart", "/payment", "/me", "/shipping"];
+        const currentPath = window.location.pathname;
+
+        if (protectedPaths.some((path) => currentPath.startsWith(path))) {
+          console.log("Session lost on protected page, redirecting to login");
+          window.location.href = `/login?callbackUrl=${encodeURIComponent(currentPath)}`;
+        }
+      }
     }
   }, [session?.user?.id]);
 
