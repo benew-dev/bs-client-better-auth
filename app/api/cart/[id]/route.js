@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/backend/config/dbConnect";
-import isAuthenticatedUser from "@/backend/middlewares/auth";
 import Cart from "@/backend/models/cart";
-import User from "@/backend/models/user";
 // eslint-disable-next-line no-unused-vars
 import Product from "@/backend/models/product";
 import { captureException } from "@/monitoring/sentry";
 import { withCartRateLimit } from "@/utils/rateLimit";
+import { isAuthenticatedUser } from "@/lib/auth-utils";
 
 /**
  * DELETE /api/cart/[id]
@@ -18,12 +17,6 @@ import { withCartRateLimit } from "@/utils/rateLimit";
 export const DELETE = withCartRateLimit(
   async function (req, { params }) {
     try {
-      // Vérifier l'authentification
-      await isAuthenticatedUser(req, NextResponse);
-
-      // Connexion DB
-      await dbConnect();
-
       // Validation de l'ID
       const { id } = params;
       if (!id || !/^[0-9a-fA-F]{24}$/.test(id)) {
@@ -37,8 +30,9 @@ export const DELETE = withCartRateLimit(
         );
       }
 
-      // Récupérer l'utilisateur
-      const user = await User.findOne({ email: req.user.email }).select("_id");
+      // Vérifier l'authentification
+      const user = await isAuthenticatedUser();
+
       if (!user) {
         return NextResponse.json(
           {
@@ -49,6 +43,9 @@ export const DELETE = withCartRateLimit(
           { status: 404 },
         );
       }
+
+      // Connexion DB
+      await dbConnect();
 
       // Vérifier que l'élément existe avec plus de détails
       const cartItem = await Cart.findById(id).populate(

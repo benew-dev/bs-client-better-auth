@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/backend/config/dbConnect";
-import isAuthenticatedUser from "@/backend/middlewares/auth";
-import User from "@/backend/models/user";
 import Cart from "@/backend/models/cart";
 import Product from "@/backend/models/product";
 import { DECREASE, INCREASE } from "@/helpers/constants";
 import { captureException } from "@/monitoring/sentry";
 import { withCartRateLimit, withIntelligentRateLimit } from "@/utils/rateLimit";
 import { getToken } from "next-auth/jwt";
+import { isAuthenticatedUser } from "@/lib/auth-utils";
 
 /**
  * GET /api/cart
@@ -20,13 +19,8 @@ export const GET = withIntelligentRateLimit(
   async function (req) {
     try {
       // Vérifier l'authentification
-      await isAuthenticatedUser(req, NextResponse);
+      const user = await isAuthenticatedUser();
 
-      // Connexion DB
-      await dbConnect();
-
-      // Récupérer l'utilisateur
-      const user = await User.findOne({ email: req.user.email }).select("_id");
       if (!user) {
         return NextResponse.json(
           {
@@ -37,6 +31,9 @@ export const GET = withIntelligentRateLimit(
           { status: 404 },
         );
       }
+
+      // Connexion DB
+      await dbConnect();
 
       // Récupérer le panier avec les produits populés
       const cartItems = await Cart.find({ user: user._id })
@@ -158,13 +155,8 @@ export const POST = withCartRateLimit(
   async function (req) {
     try {
       // Vérifier l'authentification
-      await isAuthenticatedUser(req, NextResponse);
+      const user = await isAuthenticatedUser();
 
-      // Connexion DB
-      await dbConnect();
-
-      // Récupérer l'utilisateur
-      const user = await User.findOne({ email: req.user.email }).select("_id");
       if (!user) {
         return NextResponse.json(
           {
@@ -175,6 +167,9 @@ export const POST = withCartRateLimit(
           { status: 404 },
         );
       }
+
+      // Connexion DB
+      await dbConnect();
 
       // Parser les données
       let body;
@@ -398,13 +393,8 @@ export const PUT = withCartRateLimit(
   async function (req) {
     try {
       // Vérifier l'authentification
-      await isAuthenticatedUser(req, NextResponse);
+      const user = await isAuthenticatedUser();
 
-      // Connexion DB
-      await dbConnect();
-
-      // Récupérer l'utilisateur
-      const user = await User.findOne({ email: req.user.email }).select("_id");
       if (!user) {
         return NextResponse.json(
           {
@@ -415,6 +405,9 @@ export const PUT = withCartRateLimit(
           { status: 404 },
         );
       }
+
+      // Connexion DB
+      await dbConnect();
 
       // Parser les données
       let body;
