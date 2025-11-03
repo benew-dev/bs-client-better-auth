@@ -1,5 +1,4 @@
 import { headers } from "next/headers";
-import { getCsrfToken } from "next-auth/react";
 import Login from "@/components/auth/Login";
 import { verifySession } from "@/lib/auth-utils";
 import { redirect } from "next/navigation";
@@ -34,38 +33,20 @@ export const metadata = {
   },
 };
 
-/**
- * Composant serveur pour la page de connexion qui effectue les vérifications
- * préalables et prépare les données nécessaires pour le client
- */
 async function LoginPage() {
   // Vérifier si l'utilisateur est déjà connecté
   const { success, session } = await verifySession();
 
-  console.log("Success", success);
-  console.log("session", session);
-
   if (session && success) {
     console.log("An user is already logged in");
-    // Rediriger l'utilisateur déjà connecté vers la page d'accueil
     return redirect("/");
   }
 
   try {
     const headersList = await headers();
-    // Récupérer les en-têtes pour le logging et la sécurité
     const userAgent = headersList.get("user-agent") || "unknown";
     const referer = headersList.get("referer") || "direct";
     const callbackUrl = "/";
-
-    // Générer un token CSRF pour sécuriser le formulaire
-    const csrfToken = await getCsrfToken({ req: { headers: headersList } });
-
-    console.log("Login page initialized", {
-      userAgent: userAgent?.substring(0, 100),
-      referer: referer?.substring(0, 200),
-      isCsrfToken: csrfToken ? "present" : "missing",
-    });
 
     // Journaliser l'accès à la page (anonymisé)
     const clientIp = (headersList.get("x-forwarded-for") || "")
@@ -80,7 +61,6 @@ async function LoginPage() {
       ip: anonymizedIp,
     });
 
-    // Rendu du composant client avec les props nécessaires
     return (
       <div className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-gray-50">
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -91,17 +71,12 @@ async function LoginPage() {
 
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
           <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-            <Login
-              csrfToken={csrfToken}
-              callbackUrl={callbackUrl}
-              referer={referer}
-            />
+            <Login callbackUrl={callbackUrl} referer={referer} />
           </div>
         </div>
       </div>
     );
   } catch (error) {
-    // Journaliser l'erreur
     console.error("Error initializing login page", {
       error: error,
       stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
