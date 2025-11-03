@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext, useEffect, useState, useRef, memo } from "react";
+import { useContext, useEffect, memo } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 
@@ -8,33 +8,22 @@ import CartContext from "@/context/CartContext";
 import dynamic from "next/dynamic";
 import CartItemSkeleton from "../skeletons/CartItemSkeleton";
 
-// Chargement dynamique du composant ItemCart
 const ItemCart = dynamic(() => import("./components/ItemCart"), {
   loading: () => <CartItemSkeleton />,
   ssr: true,
 });
 
-// Composants et hooks extraits pour meilleure organisation
 import EmptyCart from "./components/EmptyCart";
 import CartSummary from "./components/CartSummary";
-import useCartOperations from "../../hooks/useCartOperations"; // ✅ Hook avec monitoring intégré
+import useCartOperations from "../../hooks/useCartOperations";
 import CartSkeleton from "../skeletons/CartSkeleton";
 
 const Cart = () => {
-  const {
-    loading,
-    cart,
-    cartCount,
-    setCartToState,
-    cartTotal,
-    error,
-    clearError,
-  } = useContext(CartContext);
+  const { loading, cart, cartCount, cartTotal, error, clearError } =
+    useContext(CartContext);
 
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const router = useRouter();
 
-  // ✅ Hook personnalisé avec monitoring intégré
   const {
     deleteInProgress,
     itemBeingRemoved,
@@ -42,9 +31,6 @@ const Cart = () => {
     decreaseQty,
     handleDeleteItem,
   } = useCartOperations();
-
-  // Ajoutons un useRef pour suivre si une requête de chargement est en cours
-  const isLoadingCart = useRef(false);
 
   useEffect(() => {
     // Nettoyage de l'erreur si elle existe
@@ -57,38 +43,13 @@ const Cart = () => {
   // Précharger la page de livraison
   useEffect(() => {
     router.prefetch("/shipping-choice");
-    let isMounted = true; // Ajouter un flag de montage
+  }, [router]);
 
-    const loadCart = async () => {
-      if (isLoadingCart.current || !isMounted) return; // Vérifier isMounted
+  // ✅ SUPPRIMÉ : Plus de chargement ici, déjà géré par CartContext
+  // Le panier se charge automatiquement quand la session est disponible
 
-      try {
-        isLoadingCart.current = true;
-        await setCartToState();
-      } catch (error) {
-        console.error("Erreur lors du chargement du panier:", error);
-        // ❌ SUPPRIMÉ : Plus de captureException ici (géré par CartContext)
-        toast.error("Impossible de charger votre panier. Veuillez réessayer.");
-      } finally {
-        if (isMounted) {
-          // Vérifier avant de mettre à jour l'état
-          isLoadingCart.current = false;
-          setInitialLoadComplete(true);
-        }
-      }
-    };
-
-    if (!initialLoadComplete && !isLoadingCart.current) {
-      loadCart();
-    }
-
-    return () => {
-      isMounted = false; // Cleanup
-    };
-  }, [setCartToState, initialLoadComplete]);
-
-  // Afficher un écran de chargement pendant le chargement initial
-  if (!initialLoadComplete) {
+  // Afficher un skeleton pendant le chargement initial
+  if (loading && cart.length === 0) {
     return <CartSkeleton />;
   }
 

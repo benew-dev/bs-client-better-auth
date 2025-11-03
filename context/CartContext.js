@@ -6,43 +6,54 @@ import {
   useCallback,
   useMemo,
   useEffect,
+  useRef,
 } from "react";
 import { toast } from "react-toastify";
 import { DECREASE, INCREASE } from "@/helpers/constants";
 import captureClientError from "@/monitoring/sentry";
-import { useSession } from "@/lib/auth-client"; // ✅ Import du hook Better Auth
+import { useSession } from "@/lib/auth-client";
 
 const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
-  const { data: session } = useSession(); // ✅ Récupérer la session Better Auth
+  const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
   const [cart, setCart] = useState([]);
   const [cartCount, setCartCount] = useState(0);
   const [cartTotal, setCartTotal] = useState(0);
   const [error, setError] = useState(null);
 
-  // ✅ Charger le panier automatiquement quand la session est disponible
-  useEffect(() => {
-    if (session?.user) {
-      setCartToState();
-    } else {
-      // Réinitialiser le panier si pas de session
-      clearCartOnLogout();
-    }
-  }, [session?.user?.id]); // Dépendance sur l'ID utilisateur
+  // ✅ Flag pour éviter les chargements multiples
+  const isLoadingRef = useRef(false);
+  const hasLoadedRef = useRef(false);
 
-  // Récupérer le panier - SIMPLIFIÉ (30 lignes max)
+  // ✅ Charger le panier automatiquement UNE SEULE FOIS quand la session est disponible
+  useEffect(() => {
+    if (session?.user && !hasLoadedRef.current) {
+      hasLoadedRef.current = true;
+      setCartToState();
+    } else if (!session?.user) {
+      // Réinitialiser quand l'utilisateur se déconnecte
+      clearCartOnLogout();
+      hasLoadedRef.current = false;
+    }
+  }, [session?.user?.id]);
+
+  // Récupérer le panier
   const setCartToState = useCallback(async () => {
-    // ✅ Vérifier si l'utilisateur est connecté AVANT d'appeler l'API
+    // ✅ Empêcher les appels multiples simultanés
+    if (isLoadingRef.current) {
+      console.log("Cart loading already in progress, skipping...");
+      return;
+    }
+
     if (!session?.user) {
       console.log("No session available, skipping cart load");
       return;
     }
 
-    if (loading) return;
-
     try {
+      isLoadingRef.current = true;
       setLoading(true);
       setError(null);
 
@@ -103,8 +114,9 @@ export const CartProvider = ({ children }) => {
       console.error("Cart retrieval error:", error.message);
     } finally {
       setLoading(false);
+      isLoadingRef.current = false;
     }
-  }, [session?.user, loading]); // ✅ Ajouter session?.user dans les dépendances
+  }, [session?.user]);
 
   // Ajouter au panier - SIMPLIFIÉ (40 lignes max)
   const addItemToCart = async ({ product, quantity = 1 }) => {
@@ -394,7 +406,6 @@ export const CartProvider = ({ children }) => {
     }
   };
 
-  // Valeur du contexte avec mémorisation
   const contextValue = useMemo(
     () => ({
       loading,
@@ -409,7 +420,7 @@ export const CartProvider = ({ children }) => {
       clearError,
       clearCartOnLogout,
     }),
-    [loading, cart, cartCount, cartTotal, error, setCartToState], // ✅ Ajouter setCartToState
+    [loading, cart, cartCount, cartTotal, error, setCartToState],
   );
 
   return (

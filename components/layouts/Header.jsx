@@ -128,8 +128,7 @@ UserDropdown.displayName = "UserDropdown";
 const Header = () => {
   const { data: session } = useSession();
   const user = session?.user;
-  const { setCartToState, cartCount, clearCartOnLogout } =
-    useContext(CartContext);
+  const { cartCount, clearCartOnLogout } = useContext(CartContext); // ✅ Retirer setCartToState
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   // eslint-disable-next-line no-unused-vars
   const [isLoadingCart, setIsLoadingCart] = useState(false);
@@ -151,57 +150,6 @@ const Header = () => {
         clearTimeout(mobileMenuTimeoutRef.current);
     };
   }, []);
-
-  // Fonction loadCart optimisée avec debounce
-  const loadCart = useCallback(async () => {
-    if (isCartLoadingRef.current) return;
-
-    try {
-      isCartLoadingRef.current = true;
-      setIsLoadingCart(true);
-      await setCartToState();
-    } catch (error) {
-      if (!IS_PRODUCTION) {
-        console.error("Error loading cart:", error);
-      }
-      Sentry.captureException(error, {
-        tags: {
-          component: "Header",
-          action: "loadCart",
-        },
-        level: "warning",
-      });
-    } finally {
-      setIsLoadingCart(false);
-      isCartLoadingRef.current = false;
-    }
-  }, [setCartToState]);
-
-  // useEffect optimisé pour la gestion de session
-  useEffect(() => {
-    let mounted = true;
-
-    if (session && mounted) {
-      try {
-        if (loadCartTimeoutRef.current) {
-          clearTimeout(loadCartTimeoutRef.current);
-        }
-
-        loadCart();
-      } catch (error) {
-        Sentry.captureException(error, {
-          tags: {
-            component: "Header",
-            action: "initUserData",
-          },
-        });
-      }
-    }
-
-    return () => {
-      mounted = false;
-    };
-  }, [loadCart]);
 
   // Fermer le menu mobile si on clique en dehors
   useEffect(() => {
