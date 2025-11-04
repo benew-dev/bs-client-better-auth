@@ -10,11 +10,11 @@ import {
 } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import * as Sentry from "@sentry/nextjs";
 import { Menu, ShoppingCart, User, X } from "lucide-react";
 import dynamic from "next/dynamic";
-import { signOut, useSession } from "@/lib/auth-client";
+import { signOut } from "@/lib/auth-client";
 import CartContext from "@/context/CartContext";
+import { useSessionRefresh } from "@/hooks/useSessionRefresh";
 
 // Chargement dynamique optimisé du composant Search
 const Search = dynamic(() => import("./Search"), {
@@ -51,7 +51,7 @@ const CartButton = memo(({ cartCount }) => {
 CartButton.displayName = "CartButton";
 
 // ✅ Dropdown utilisateur avec gestion vérification
-const UserDropdown = memo(({ user }) => {
+const UserDropdown = memo(({ user, refreshKey }) => {
   const menuItems = [
     { href: "/me", label: "Mon profil" },
     { href: "/me/orders", label: "Mes commandes" },
@@ -59,7 +59,7 @@ const UserDropdown = memo(({ user }) => {
   ];
 
   return (
-    <div className="relative group">
+    <div className="relative group" key={refreshKey}>
       <Link
         href="/me"
         className="flex items-center space-x-2 px-3 py-2 rounded-md transition-colors hover:bg-blue-50"
@@ -70,6 +70,7 @@ const UserDropdown = memo(({ user }) => {
       >
         <div className="relative w-8 h-8 rounded-full overflow-hidden border border-gray-200">
           <Image
+            key={`avatar-${refreshKey}-${user?.avatar?.url}`} // ✅ Key unique
             data-testid="profile image"
             alt={`Photo de profil de ${user?.name || "utilisateur"}`}
             src={
@@ -126,7 +127,7 @@ const UserDropdown = memo(({ user }) => {
 UserDropdown.displayName = "UserDropdown";
 
 const Header = () => {
-  const { data: session } = useSession();
+  const { session, isPending, refreshKey } = useSessionRefresh();
   const user = session?.user;
   const { cartCount, clearCartOnLogout } = useContext(CartContext); // ✅ Retirer setCartToState
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -137,9 +138,6 @@ const Header = () => {
   const loadCartTimeoutRef = useRef(null);
   const signOutTimeoutRef = useRef(null);
   const mobileMenuTimeoutRef = useRef(null);
-
-  // Flag pour éviter les chargements multiples
-  const isCartLoadingRef = useRef(false);
 
   // Cleanup des timeouts au démontage
   useEffect(() => {
@@ -220,8 +218,26 @@ const Header = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
+  // ✅ Afficher un loading skeleton pendant le refresh
+  if (isPending) {
+    return (
+      <header className="bg-white py-2 border-b sticky top-0 z-50 shadow-sm">
+        <div className="container max-w-[1440px] mx-auto px-4">
+          <div className="flex items-center justify-between">
+            <div className="h-10 w-32 bg-gray-200 animate-pulse rounded"></div>
+            <div className="h-10 flex-1 max-w-xl mx-4 bg-gray-200 animate-pulse rounded"></div>
+            <div className="h-10 w-32 bg-gray-200 animate-pulse rounded"></div>
+          </div>
+        </div>
+      </header>
+    );
+  }
+
   return (
-    <header className="bg-white py-2 border-b sticky top-0 z-50 shadow-sm">
+    <header
+      className="bg-white py-2 border-b sticky top-0 z-50 shadow-sm"
+      key={refreshKey}
+    >
       <div className="container max-w-[1440px] mx-auto px-4">
         <div className="flex flex-wrap items-center justify-between">
           {/* Logo */}
@@ -269,6 +285,7 @@ const Header = () => {
                   aria-controls="mobile-menu"
                 >
                   <Image
+                    key={`mobile-avatar-${refreshKey}-${user?.avatar?.url}`}
                     alt={`Photo de profil de ${user?.name || "utilisateur"}`}
                     src={
                       user?.avatar?.url !== null
@@ -318,7 +335,7 @@ const Header = () => {
                 <span className="ml-1">Connexion</span>
               </Link>
             ) : (
-              <UserDropdown user={user} />
+              <UserDropdown user={user} refreshKey={refreshKey} />
             )}
           </div>
         </div>

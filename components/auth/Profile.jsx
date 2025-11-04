@@ -11,10 +11,10 @@ import {
   Phone,
   MapPin,
 } from "lucide-react";
-import { useSession } from "@/lib/auth-client";
+import { useSessionRefresh } from "@/hooks/useSessionRefresh";
 
 const Profile = () => {
-  const { data: session } = useSession(); // ✅ Obtenir la session
+  const { session, isPending, refreshKey } = useSessionRefresh();
   const user = session?.user; // ✅ Extraire l'utilisateur de la session
 
   const [isClient, setIsClient] = useState(false);
@@ -82,7 +82,7 @@ const Profile = () => {
   };
 
   // Skeleton loading
-  if (status === "loading" || !isClient || !user) {
+  if (isPending || !isClient || !user) {
     return (
       <div className="animate-pulse space-y-6">
         <div className="bg-white rounded-lg shadow-md p-6">
@@ -115,7 +115,7 @@ const Profile = () => {
     userData.address?.country;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" key={refreshKey}>
       {/* Card principale du profil */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         {/* Header avec avatar et actions */}
@@ -127,6 +127,7 @@ const Profile = () => {
             <div className="relative">
               <div className="relative w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white">
                 <Image
+                  key={`profile-avatar-${refreshKey}-${userData.avatarUrl}`} // ✅ Key unique
                   className="object-cover"
                   src={userData.avatarUrl}
                   alt={`${userData.name}'s profile picture`}
