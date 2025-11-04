@@ -105,12 +105,7 @@ export const AuthProvider = ({ children }) => {
         // ✅ FORCER LE REFRESH DE LA SESSION BETTER AUTH
         await refreshSession();
 
-        // Petit délai pour laisser la session se mettre à jour
-        await new Promise((resolve) => setTimeout(resolve, 300));
-
-        // Redirection après mise à jour
-        router.push("/me");
-        router.refresh();
+        window.location.href = "/me";
       }
     } catch (error) {
       // Erreurs réseau/système
