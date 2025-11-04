@@ -11,10 +11,11 @@ import {
   Phone,
   MapPin,
 } from "lucide-react";
-import { useSessionRefresh } from "@/hooks/useSessionRefresh";
+import { useSession } from "@/lib/auth-client";
 
 const Profile = () => {
-  const { session, isPending, refreshKey } = useSessionRefresh();
+  // ✅ UTILISER useSession DIRECTEMENT
+  const { data: session, isPending } = useSession();
   const user = session?.user; // ✅ Extraire l'utilisateur de la session
 
   const [isClient, setIsClient] = useState(false);
@@ -115,7 +116,7 @@ const Profile = () => {
     userData.address?.country;
 
   return (
-    <div className="space-y-6" key={refreshKey}>
+    <div className="space-y-6">
       {/* Card principale du profil */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         {/* Header avec avatar et actions */}
@@ -127,7 +128,7 @@ const Profile = () => {
             <div className="relative">
               <div className="relative w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white">
                 <Image
-                  key={`profile-avatar-${refreshKey}-${userData.avatarUrl}`} // ✅ Key unique
+                  key={`profile-avatar-${userData.avatarUrl}`} // ✅ Key unique
                   className="object-cover"
                   src={userData.avatarUrl}
                   alt={`${userData.name}'s profile picture`}

@@ -11,13 +11,13 @@ import { captureException } from "@/monitoring/sentry";
 import { ArrowLeft, LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
-import { useRefreshSession } from "@/hooks/useRefreshSession";
 
 /**
  * Composant de mise à jour de profil utilisateur avec adresse
  */
-const UpdateProfile = ({ userId, initialEmail, referer }) => {
-  const { data: session } = useSession(); // ✅ Récupérer isPending
+const UpdateProfile = ({ initialEmail }) => {
+  // ✅ RÉCUPÉRER LA MÉTHODE refetch()
+  const { data: session, refetch } = useSession();
   const user = session?.user;
 
   const { error, loading, updateProfile, clearErrors } =
@@ -51,7 +51,6 @@ const UpdateProfile = ({ userId, initialEmail, referer }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadInProgress, setUploadInProgress] = useState(false);
   const [formTouched, setFormTouched] = useState(false);
-  const refreshSession = useRefreshSession(); // ✅ Hook de refresh
 
   // Initialisation des données
   useEffect(() => {
@@ -187,7 +186,7 @@ const UpdateProfile = ({ userId, initialEmail, referer }) => {
     router.back();
   };
 
-  // ✅ MISE À JOUR DU submitHandler
+  // ✅ SOLUTION FINALE
   const submitHandler = async (e) => {
     e.preventDefault();
 
@@ -202,40 +201,23 @@ const UpdateProfile = ({ userId, initialEmail, referer }) => {
 
       const { name, phone, avatar, address } = formState;
 
-      // Appel de l'API qui utilise Better Auth en backend
+      // Appel de l'API
       await updateProfile({ name, phone, avatar, address });
 
       setFormTouched(false);
       setValidationErrors({});
 
-      if (process.env.NODE_ENV === "production") {
-        console.info("Profile updated successfully", {
-          userId: userId
-            ? `${userId.substring(0, 2)}...${userId.slice(-2)}`
-            : "unknown",
-          hasAvatar: !!avatar,
-          hasAddress: !!(address.street && address.city && address.country),
-          referer: referer ? `${referer.substring(0, 10)}...` : "direct",
-        });
-      }
+      // ✅ REFETCH LA SESSION - SOLUTION OFFICIELLE BETTER AUTH
+      console.log("🔄 Refreshing session...");
+      await refetch();
+      console.log("✅ Session refreshed!");
 
-      // ✅ FORCER LE REFRESH DE LA SESSION
-      const refreshed = await refreshSession();
-
-      if (refreshed) {
-        console.log("✅ Session refreshed successfully");
-      } else {
-        console.warn("⚠️ Session refresh failed, forcing full reload");
-        // Fallback : rechargement complet
-        window.location.href = "/me";
-        return;
-      }
+      toast.success("Profil mis à jour avec succès!");
 
       // Redirection après succès
       setTimeout(() => {
         router.push("/me");
-        router.refresh();
-      }, 300);
+      }, 500);
     } catch (error) {
       console.error("Erreur de mise à jour du profil:", error);
       toast.error(

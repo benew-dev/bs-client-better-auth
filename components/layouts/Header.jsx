@@ -12,9 +12,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { Menu, ShoppingCart, User, X } from "lucide-react";
 import dynamic from "next/dynamic";
-import { signOut } from "@/lib/auth-client";
+import { signOut, useSession } from "@/lib/auth-client";
 import CartContext from "@/context/CartContext";
-import { useSessionRefresh } from "@/hooks/useSessionRefresh";
 
 // Chargement dynamique optimisé du composant Search
 const Search = dynamic(() => import("./Search"), {
@@ -51,7 +50,7 @@ const CartButton = memo(({ cartCount }) => {
 CartButton.displayName = "CartButton";
 
 // ✅ Dropdown utilisateur avec gestion vérification
-const UserDropdown = memo(({ user, refreshKey }) => {
+const UserDropdown = memo(({ user }) => {
   const menuItems = [
     { href: "/me", label: "Mon profil" },
     { href: "/me/orders", label: "Mes commandes" },
@@ -59,7 +58,7 @@ const UserDropdown = memo(({ user, refreshKey }) => {
   ];
 
   return (
-    <div className="relative group" key={refreshKey}>
+    <div className="relative group">
       <Link
         href="/me"
         className="flex items-center space-x-2 px-3 py-2 rounded-md transition-colors hover:bg-blue-50"
@@ -70,7 +69,7 @@ const UserDropdown = memo(({ user, refreshKey }) => {
       >
         <div className="relative w-8 h-8 rounded-full overflow-hidden border border-gray-200">
           <Image
-            key={`avatar-${refreshKey}-${user?.avatar?.url}`} // ✅ Key unique
+            key={`avatar-${user?.avatar?.url}`} // ✅ Key unique
             data-testid="profile image"
             alt={`Photo de profil de ${user?.name || "utilisateur"}`}
             src={
@@ -127,12 +126,11 @@ const UserDropdown = memo(({ user, refreshKey }) => {
 UserDropdown.displayName = "UserDropdown";
 
 const Header = () => {
-  const { session, isPending, refreshKey } = useSessionRefresh();
+  // ✅ UTILISER useSession DIRECTEMENT
+  const { data: session, isPending } = useSession();
   const user = session?.user;
   const { cartCount, clearCartOnLogout } = useContext(CartContext); // ✅ Retirer setCartToState
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  // eslint-disable-next-line no-unused-vars
-  const [isLoadingCart, setIsLoadingCart] = useState(false);
 
   // Refs pour gérer les timeouts
   const loadCartTimeoutRef = useRef(null);
@@ -234,10 +232,7 @@ const Header = () => {
   }
 
   return (
-    <header
-      className="bg-white py-2 border-b sticky top-0 z-50 shadow-sm"
-      key={refreshKey}
-    >
+    <header className="bg-white py-2 border-b sticky top-0 z-50 shadow-sm">
       <div className="container max-w-[1440px] mx-auto px-4">
         <div className="flex flex-wrap items-center justify-between">
           {/* Logo */}
@@ -285,7 +280,7 @@ const Header = () => {
                   aria-controls="mobile-menu"
                 >
                   <Image
-                    key={`mobile-avatar-${refreshKey}-${user?.avatar?.url}`}
+                    key={`mobile-avatar-${user?.avatar?.url}`}
                     alt={`Photo de profil de ${user?.name || "utilisateur"}`}
                     src={
                       user?.avatar?.url !== null
@@ -335,7 +330,7 @@ const Header = () => {
                 <span className="ml-1">Connexion</span>
               </Link>
             ) : (
-              <UserDropdown user={user} refreshKey={refreshKey} />
+              <UserDropdown user={user} />
             )}
           </div>
         </div>
