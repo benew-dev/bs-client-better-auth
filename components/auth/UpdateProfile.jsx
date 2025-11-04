@@ -16,15 +16,16 @@ import { useSession } from "@/lib/auth-client";
  * Composant de mise à jour de profil utilisateur avec adresse
  */
 const UpdateProfile = ({ userId, initialEmail, referer }) => {
-  const { data: session } = useSession();
-  const user = session.user;
+  const { data: session, isPending } = useSession(); // ✅ Récupérer isPending
+  const user = session?.user;
 
   const { error, loading, updateProfile, clearErrors } =
     useContext(AuthContext);
 
+  const router = useRouter();
+
   const formRef = useRef(null);
   const nameInputRef = useRef(null);
-  const router = useRouter();
 
   // Format et tri des pays
   const countriesList = useCallback(() => {
@@ -184,7 +185,7 @@ const UpdateProfile = ({ userId, initialEmail, referer }) => {
     router.back();
   };
 
-  // NOUVEAU CODE - Compatible Better Auth
+  // ✅ MISE À JOUR DU submitHandler
   const submitHandler = async (e) => {
     e.preventDefault();
 
@@ -216,10 +217,16 @@ const UpdateProfile = ({ userId, initialEmail, referer }) => {
         });
       }
 
-      // Redirection après succès
-      setTimeout(() => {
-        router.push("/me");
-      }, 500);
+      // ✅ FORCER LE REFRESH DE LA SESSION BETTER AUTH
+      // Attendre un peu que l'API finisse la mise à jour
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Forcer le rechargement de la page pour rafraîchir la session
+      router.push("/me");
+      router.refresh(); // ✅ Force Next.js à refetch les données serveur
+
+      // Alternative : recharger complètement la page
+      // window.location.href = "/me";
     } catch (error) {
       console.error("Erreur de mise à jour du profil:", error);
       toast.error(
