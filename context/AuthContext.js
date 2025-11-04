@@ -1,5 +1,6 @@
 "use client";
 
+import { refreshSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { createContext, useState } from "react";
 import { toast } from "react-toastify";
@@ -65,7 +66,6 @@ export const AuthProvider = ({ children }) => {
         let errorMessage = "";
         switch (res.status) {
           case 400:
-            // Afficher les erreurs de validation spécifiques si disponibles
             if (data.errors) {
               const firstErrorKey = Object.keys(data.errors)[0];
               errorMessage =
@@ -85,9 +85,8 @@ export const AuthProvider = ({ children }) => {
             errorMessage = data.message || "Erreur lors de la mise à jour";
         }
 
-        // Monitoring pour erreurs HTTP
         const httpError = new Error(`HTTP ${res.status}: ${errorMessage}`);
-        const isCritical = res.status === 401; // Session expirée = critique
+        const isCritical = res.status === 401;
         console.error(httpError, "AuthContext", "updateProfile", isCritical);
 
         setError(errorMessage);
@@ -103,11 +102,15 @@ export const AuthProvider = ({ children }) => {
         setUser(data.data.updatedUser);
         setUpdated(true);
 
+        // ✅ FORCER LE REFRESH DE LA SESSION BETTER AUTH
+        await refreshSession();
+
+        // Petit délai pour laisser la session se mettre à jour
+        await new Promise((resolve) => setTimeout(resolve, 300));
+
         // Redirection après mise à jour
-        setTimeout(() => {
-          router.push("/me");
-          router.refresh(); // Force le rafraîchissement pour récupérer la nouvelle session
-        }, 500);
+        router.push("/me");
+        router.refresh();
       }
     } catch (error) {
       // Erreurs réseau/système
