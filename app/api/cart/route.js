@@ -6,7 +6,10 @@ import { DECREASE, INCREASE } from "@/helpers/constants";
 import { captureException } from "@/monitoring/sentry";
 import { withCartRateLimit, withIntelligentRateLimit } from "@/utils/rateLimit";
 import { getToken } from "next-auth/jwt";
-import { isAuthenticatedUser } from "@/lib/auth-utils";
+import {
+  extractUserInfoFromRequest,
+  isAuthenticatedUser,
+} from "@/lib/auth-utils";
 
 /**
  * GET /api/cart
@@ -117,32 +120,8 @@ export const GET = withIntelligentRateLimit(
   },
   {
     category: "api",
-    action: "authenticatedRead", // 200 req/min pour utilisateurs authentifiés
-    extractUserInfo: async (req) => {
-      try {
-        const cookieName =
-          process.env.NODE_ENV === "production"
-            ? "__Secure-next-auth.session-token"
-            : "next-auth.session-token";
-
-        const token = await getToken({
-          req,
-          secret: process.env.NEXTAUTH_SECRET,
-          cookieName,
-        });
-
-        return {
-          userId: token?.user?._id || token?.user?.id || token?.sub,
-          email: token?.user?.email,
-        };
-      } catch (error) {
-        console.error(
-          "[CART_GET] Error extracting user from JWT:",
-          error.message,
-        );
-        return {};
-      }
-    },
+    action: "authenticatedRead",
+    extractUserInfo: extractUserInfoFromRequest, // ✅ Remplacer l'ancienne fonction
   },
 );
 
