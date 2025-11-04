@@ -3,7 +3,6 @@
 import { memo, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useSession } from "next-auth/react";
 import {
   EllipsisVertical,
   Lock,
@@ -12,9 +11,10 @@ import {
   Phone,
   MapPin,
 } from "lucide-react";
+import { useSession } from "@/lib/auth-client";
 
 const Profile = () => {
-  const { data: session, status } = useSession(); // ✅ Obtenir la session
+  const { data: session } = useSession(); // ✅ Obtenir la session
   const user = session?.user; // ✅ Extraire l'utilisateur de la session
 
   const [isClient, setIsClient] = useState(false);
