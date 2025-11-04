@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/backend/config/dbConnect";
-import isAuthenticatedUser from "@/backend/middlewares/auth";
 import Order from "@/backend/models/order";
-import User from "@/backend/models/user";
 import Product from "@/backend/models/product";
 import Category from "@/backend/models/category";
 import Cart from "@/backend/models/cart";
 import { captureException } from "@/monitoring/sentry";
 import { withIntelligentRateLimit } from "@/utils/rateLimit";
 import { getToken } from "next-auth/jwt";
+import { isAuthenticatedUser } from "@/lib/auth-utils";
 
 /**
  * POST /api/orders/webhook
@@ -25,15 +24,7 @@ export const POST = withIntelligentRateLimit(
   async function (req) {
     try {
       // 1. Authentification
-      await isAuthenticatedUser(req, NextResponse);
-
-      // 2. Connexion DB
-      await dbConnect();
-
-      // 3. Récupérer l'utilisateur avec validation améliorée
-      const user = await User.findOne({ email: req.user.email })
-        .select("_id name email isActive")
-        .lean();
+      const user = await isAuthenticatedUser();
 
       if (!user) {
         return NextResponse.json(
@@ -58,6 +49,9 @@ export const POST = withIntelligentRateLimit(
           { status: 403 },
         );
       }
+
+      // 2. Connexion DB
+      await dbConnect();
 
       // 4. Parser et valider les données de commande
       let orderData;
@@ -193,7 +187,7 @@ export const POST = withIntelligentRateLimit(
                 productId: product._id,
                 expectedPrice: product.price,
                 providedPrice: item.price,
-                userId: user._id,
+                userId: user.id,
               });
 
               unavailableProducts.push({
@@ -250,7 +244,7 @@ export const POST = withIntelligentRateLimit(
           });
 
           // Ajouter des métadonnées à la commande
-          orderData.user = user._id;
+          orderData.user = user.id;
 
           // Créer la commande
           const order = await Order.create([orderData], { session });
@@ -262,12 +256,12 @@ export const POST = withIntelligentRateLimit(
 
           if (cartIds.length > 0) {
             const deleteResult = await Cart.deleteMany(
-              { _id: { $in: cartIds }, user: user._id },
+              { _id: { $in: cartIds }, user: user.id },
               { session },
             );
 
             console.log(
-              `Cleared ${deleteResult.deletedCount} items from cart for user ${user._id}`,
+              `Cleared ${deleteResult.deletedCount} items from cart for user ${user.id}`,
             );
           }
 
@@ -276,14 +270,14 @@ export const POST = withIntelligentRateLimit(
         });
 
         // Transaction réussie - Récupérer la commande complète
-        const order = await Order.findOne({ user: user._id })
+        const order = await Order.findOne({ user: user.id })
           .sort({ createdAt: -1 })
           .select("_id orderNumber paymentStatus")
           .lean();
 
         // Log de sécurité pour audit avec info CASH
         console.log("🔒 Security event - Order created:", {
-          userId: user._id,
+          userId: user.id,
           userEmail: user.email,
           orderId: order._id,
           orderNumber: order.orderNumber,
@@ -319,7 +313,7 @@ export const POST = withIntelligentRateLimit(
 
             // Log pour analyse
             console.warn("Order failed due to stock issues:", {
-              userId: user._id,
+              userId: user.id,
               unavailableProducts: errorData.products,
               timestamp: new Date().toISOString(),
             });
@@ -340,7 +334,7 @@ export const POST = withIntelligentRateLimit(
 
         // Log de l'erreur de transaction
         console.error("Transaction failed:", {
-          userId: user._id,
+          userId: user.id,
           error: transactionError.message,
           timestamp: new Date().toISOString(),
         });

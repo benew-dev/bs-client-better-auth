@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/backend/config/dbConnect";
-import isAuthenticatedUser from "@/backend/middlewares/auth";
 import Order from "@/backend/models/order";
-import User from "@/backend/models/user";
 import APIFilters from "@/backend/utils/APIFilters";
 import { captureException } from "@/monitoring/sentry";
 import { withIntelligentRateLimit } from "@/utils/rateLimit";
 import { getToken } from "next-auth/jwt";
+import { isAuthenticatedUser } from "@/lib/auth-utils";
 
 /**
  * GET /api/orders/me
@@ -26,15 +25,7 @@ export const GET = withIntelligentRateLimit(
   async function (req) {
     try {
       // Vérifier l'authentification
-      await isAuthenticatedUser(req, NextResponse);
-
-      // Connexion DB
-      await dbConnect();
-
-      // Récupérer l'utilisateur avec validation améliorée
-      const user = await User.findOne({ email: req.user.email })
-        .select("_id name email phone isActive")
-        .lean();
+      const user = await isAuthenticatedUser();
 
       if (!user) {
         return NextResponse.json(
@@ -63,6 +54,9 @@ export const GET = withIntelligentRateLimit(
         );
       }
 
+      // Connexion DB
+      await dbConnect();
+
       // Récupérer et valider les paramètres de pagination
       const searchParams = req.nextUrl.searchParams;
       const page = parseInt(searchParams.get("page") || "1", 10);
@@ -82,23 +76,23 @@ export const GET = withIntelligentRateLimit(
       }
 
       // Compter le total de commandes avec les filtres
-      const ordersCount = await Order.countDocuments({ user: user._id });
+      const ordersCount = await Order.countDocuments({ user: user.id });
       const ordersPaidCount = await Order.countDocuments({
-        user: user._id,
+        user: user.id,
         paymentStatus: "paid",
       });
       const ordersUnpaidCount = await Order.countDocuments({
-        user: user._id,
+        user: user.id,
         paymentStatus: "unpaid",
       });
       const ordersPendingCashCount = await Order.countDocuments({
-        user: user._id,
+        user: user.id,
         paymentStatus: "pending_cash",
       });
 
       // Total de toutes les commandes d'un utilisateur (tous statuts confondus)
       const totalAmountOrders = await Order.getTotalAmountByUser(
-        user._id.toString(),
+        user.id.toString(),
       );
 
       // Si aucune commande trouvée
@@ -129,7 +123,7 @@ export const GET = withIntelligentRateLimit(
 
       // Utiliser APIFilters pour la pagination
       const apiFilters = new APIFilters(
-        Order.find({ user: user._id }),
+        Order.find({ user: user.id }),
         searchParams,
       ).pagination(resPerPage);
 
@@ -177,7 +171,7 @@ export const GET = withIntelligentRateLimit(
 
       // Log pour audit (sans données sensibles)
       console.log("Order history accessed:", {
-        userId: user._id,
+        userId: user.id,
         userEmail: user.email,
         ordersRetrieved: orders.length,
         cashOrders: formattedOrders.filter((o) => o.isCashPayment).length,
