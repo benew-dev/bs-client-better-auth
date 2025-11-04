@@ -11,12 +11,13 @@ import { captureException } from "@/monitoring/sentry";
 import { ArrowLeft, LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
+import { useRefreshSession } from "@/hooks/useRefreshSession";
 
 /**
  * Composant de mise à jour de profil utilisateur avec adresse
  */
 const UpdateProfile = ({ userId, initialEmail, referer }) => {
-  const { data: session, isPending } = useSession(); // ✅ Récupérer isPending
+  const { data: session } = useSession(); // ✅ Récupérer isPending
   const user = session?.user;
 
   const { error, loading, updateProfile, clearErrors } =
@@ -50,6 +51,7 @@ const UpdateProfile = ({ userId, initialEmail, referer }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadInProgress, setUploadInProgress] = useState(false);
   const [formTouched, setFormTouched] = useState(false);
+  const refreshSession = useRefreshSession(); // ✅ Hook de refresh
 
   // Initialisation des données
   useEffect(() => {
@@ -217,16 +219,23 @@ const UpdateProfile = ({ userId, initialEmail, referer }) => {
         });
       }
 
-      // ✅ FORCER LE REFRESH DE LA SESSION BETTER AUTH
-      // Attendre un peu que l'API finisse la mise à jour
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // ✅ FORCER LE REFRESH DE LA SESSION
+      const refreshed = await refreshSession();
 
-      // Forcer le rechargement de la page pour rafraîchir la session
-      router.push("/me");
-      router.refresh(); // ✅ Force Next.js à refetch les données serveur
+      if (refreshed) {
+        console.log("✅ Session refreshed successfully");
+      } else {
+        console.warn("⚠️ Session refresh failed, forcing full reload");
+        // Fallback : rechargement complet
+        window.location.href = "/me";
+        return;
+      }
 
-      // Alternative : recharger complètement la page
-      // window.location.href = "/me";
+      // Redirection après succès
+      setTimeout(() => {
+        router.push("/me");
+        router.refresh();
+      }, 300);
     } catch (error) {
       console.error("Erreur de mise à jour du profil:", error);
       toast.error(

@@ -94,18 +94,16 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
-      // Succès
       if (data.success && data.data?.updatedUser) {
         toast.success("Profil mis à jour avec succès!");
-
-        // Mettre à jour l'état local de l'utilisateur si nécessaire
         setUser(data.data.updatedUser);
         setUpdated(true);
 
-        // ✅ FORCER LE REFRESH DE LA SESSION BETTER AUTH
-        await refreshSession();
+        // ✅ Vérifier si le serveur demande un refresh
+        const sessionUpdated = res.headers.get("X-Session-Updated");
 
-        window.location.href = "/me";
+        // Retourner le succès (le refresh sera géré par le composant)
+        return { success: true, sessionUpdated };
       }
     } catch (error) {
       // Erreurs réseau/système
@@ -118,6 +116,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       console.error("Profile update error:", error.message);
+      throw error; // ✅ Remonter l'erreur pour que le composant puisse la gérer
     } finally {
       setLoading(false);
     }

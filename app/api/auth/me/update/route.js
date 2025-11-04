@@ -97,8 +97,9 @@ export const PUT = withIntelligentRateLimit(
         );
       }
 
-      // 7. Retourner la réponse avec les données mises à jour
-      return NextResponse.json(
+      // ✅ NOUVEAU : Invalider le cache de session Better Auth
+      // Créer une nouvelle réponse avec un header spécial
+      const response = NextResponse.json(
         {
           success: true,
           message: "Profile updated successfully",
@@ -117,6 +118,11 @@ export const PUT = withIntelligentRateLimit(
         },
         { status: 200 },
       );
+
+      // ✅ Ajouter un header pour signaler au client de rafraîchir
+      response.headers.set("X-Session-Updated", "true");
+
+      return response;
     } catch (error) {
       console.error("Profile update error:", error.message);
 
