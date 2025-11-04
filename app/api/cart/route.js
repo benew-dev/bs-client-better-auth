@@ -8,6 +8,7 @@ import { withCartRateLimit, withIntelligentRateLimit } from "@/utils/rateLimit";
 import { getToken } from "next-auth/jwt";
 import {
   extractUserInfoFromRequest,
+  getSessionFromRequest,
   isAuthenticatedUser,
 } from "@/lib/auth-utils";
 
@@ -363,7 +364,6 @@ export const POST = withCartRateLimit(
     extractUserInfo: async (req) => {
       // Extraire user + session pour tracking optimal
       try {
-        const { getSessionFromRequest } = await import("@/lib/auth-api-utils");
         const session = await getSessionFromRequest(req);
         const sessionId =
           req.headers.get("x-session-id") ||
@@ -615,7 +615,6 @@ export const PUT = withCartRateLimit(
     extractUserInfo: async (req) => {
       // Extraire user + session pour tracking optimal
       try {
-        const { getSessionFromRequest } = await import("@/lib/auth-api-utils");
         const session = await getSessionFromRequest(req);
         const sessionId =
           req.headers.get("x-session-id") ||

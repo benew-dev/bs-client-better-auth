@@ -5,7 +5,7 @@ import Cart from "@/backend/models/cart";
 import Product from "@/backend/models/product";
 import { captureException } from "@/monitoring/sentry";
 import { withCartRateLimit } from "@/utils/rateLimit";
-import { isAuthenticatedUser } from "@/lib/auth-utils";
+import { getSessionFromRequest, isAuthenticatedUser } from "@/lib/auth-utils";
 
 /**
  * DELETE /api/cart/[id]
@@ -226,7 +226,6 @@ export const DELETE = withCartRateLimit(
     extractUserInfo: async (req) => {
       // Extraire user + session pour tracking optimal
       try {
-        const { getSessionFromRequest } = await import("@/lib/auth-api-utils");
         const session = await getSessionFromRequest(req);
         const sessionId =
           req.headers.get("x-session-id") ||
