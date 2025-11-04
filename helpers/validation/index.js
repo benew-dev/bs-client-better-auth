@@ -52,16 +52,16 @@ export {
 } from "./schemas/product";
 
 // Export des schémas paiement
-// export {
-//   SUPPORTED_PLATFORMS,
-//   djiboutiPaymentSchema,
-//   simpleInvoiceSchema,
-//   getPlatformName,
-//   getPlatformOptions,
-//   formatDjiboutiPhone,
-//   validateDjiboutiPayment,
-//   validateSimpleInvoice,
-// } from "./schemas/payment";
+export {
+  SUPPORTED_PLATFORMS,
+  djiboutiPaymentSchema,
+  simpleInvoiceSchema,
+  getPlatformName,
+  getPlatformOptions,
+  formatDjiboutiPhone,
+  validateDjiboutiPayment,
+  validateSimpleInvoice,
+} from "./schemas/payment";
 
 // Export des schémas contact
 // export {

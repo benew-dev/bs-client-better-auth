@@ -13,6 +13,7 @@
  * @date 2025-10-06
  */
 
+import { getSessionFromRequest } from "@/lib/auth-utils";
 import { NextResponse } from "next/server";
 
 /**
@@ -527,9 +528,6 @@ export function withIntelligentRateLimit(handler, options = {}) {
         if (strategy.requireAuth) {
           try {
             // ✅ REMPLACER getToken de next-auth par Better Auth
-            const { getSessionFromRequest } = await import(
-              "@/lib/auth-api-utils"
-            );
             const session = await getSessionFromRequest(req);
 
             if (session?.user) {
