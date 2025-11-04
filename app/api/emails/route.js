@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
 import { Resend } from "resend";
 import dbConnect from "@/backend/config/dbConnect";
 import { validateContactMessage } from "@/helpers/validation/schemas/contact";
 import { captureException } from "@/monitoring/sentry";
 import { withIntelligentRateLimit } from "@/utils/rateLimit";
 import DOMPurify from "isomorphic-dompurify";
-import { isAuthenticatedUser } from "@/lib/auth-utils";
+import {
+  extractUserInfoFromRequest,
+  isAuthenticatedUser,
+} from "@/lib/auth-utils";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -309,30 +311,6 @@ ID Utilisateur: ${user.id}
       keyStrategy: "user",
       requireAuth: true,
     },
-    extractUserInfo: async (req) => {
-      try {
-        const cookieName =
-          process.env.NODE_ENV === "production"
-            ? "__Secure-next-auth.session-token"
-            : "next-auth.session-token";
-
-        const token = await getToken({
-          req,
-          secret: process.env.NEXTAUTH_SECRET,
-          cookieName,
-        });
-
-        return {
-          userId: token?.user?._id || token?.user?.id || token?.sub,
-          email: token?.user?.email,
-        };
-      } catch (error) {
-        console.error(
-          "[EMAILS] Error extracting user from JWT:",
-          error.message,
-        );
-        return {};
-      }
-    },
+    extractUserInfo: extractUserInfoFromRequest,
   },
 );
