@@ -97,6 +97,14 @@ export const PUT = withIntelligentRateLimit(
         );
       }
 
+      // ✅ NOUVEAU : INVALIDER LE CACHE EN RÉCUPÉRANT LA SESSION SANS CACHE
+      await auth.api.getSession({
+        query: {
+          disableCookieCache: true, // ✅ Force le refresh du cache
+        },
+        headers: await headers(),
+      });
+
       // ✅ NOUVEAU : Invalider le cache de session Better Auth
       // Créer une nouvelle réponse avec un header spécial
       const response = NextResponse.json(
