@@ -6,8 +6,10 @@ import Category from "@/backend/models/category";
 import Cart from "@/backend/models/cart";
 import { captureException } from "@/monitoring/sentry";
 import { withIntelligentRateLimit } from "@/utils/rateLimit";
-import { getToken } from "next-auth/jwt";
-import { isAuthenticatedUser } from "@/lib/auth-utils";
+import {
+  extractUserInfoFromRequest,
+  isAuthenticatedUser,
+} from "@/lib/auth-utils";
 
 /**
  * POST /api/orders/webhook
@@ -404,30 +406,6 @@ export const POST = withIntelligentRateLimit(
   {
     category: "payment",
     action: "createOrder", // 5 commandes par 5 minutes
-    extractUserInfo: async (req) => {
-      try {
-        const cookieName =
-          process.env.NODE_ENV === "production"
-            ? "__Secure-next-auth.session-token"
-            : "next-auth.session-token";
-
-        const token = await getToken({
-          req,
-          secret: process.env.NEXTAUTH_SECRET,
-          cookieName,
-        });
-
-        return {
-          userId: token?.user?._id || token?.user?.id || token?.sub,
-          email: token?.user?.email,
-        };
-      } catch (error) {
-        console.error(
-          "[ORDER_WEBHOOK] Error extracting user from JWT:",
-          error.message,
-        );
-        return {};
-      }
-    },
+    extractUserInfo: extractUserInfoFromRequest, // ✅ Remplacer la fonction personnalisée
   },
 );

@@ -29,13 +29,13 @@ export {
 } from "./schemas/auth";
 
 // Export des schémas utilisateur
-// export {
-//   profileSchema,
-//   emailVerificationSchema,
-//   validateProfile,
-//   validateProfileWithLogging,
-//   validateEmailVerification,
-// } from "./schemas/user";
+export {
+  profileSchema,
+  emailVerificationSchema,
+  validateProfile,
+  validateProfileWithLogging,
+  validateEmailVerification,
+} from "./schemas/user";
 
 // Export des schémas produit
 export {
@@ -64,10 +64,10 @@ export {
 } from "./schemas/payment";
 
 // Export des schémas contact
-// export {
-//   contactSchema,
-//   validateContactMessage,
-//   classifyMessageType,
-//   isMessageUrgent,
-//   formatContactEmail,
-// } from "./schemas/contact";
+export {
+  contactSchema,
+  validateContactMessage,
+  classifyMessageType,
+  isMessageUrgent,
+  formatContactEmail,
+} from "./schemas/contact";

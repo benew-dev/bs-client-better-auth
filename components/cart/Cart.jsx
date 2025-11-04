@@ -52,7 +52,7 @@ const Cart = () => {
 
   // Précharger la page de livraison
   useEffect(() => {
-    router.prefetch("/shipping-choice");
+    router.prefetch("/payment");
   }, [router]);
 
   // ✅ SUPPRIMÉ : Plus de chargement ici, déjà géré par CartContext

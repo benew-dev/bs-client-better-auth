@@ -4,8 +4,10 @@ import Order from "@/backend/models/order";
 import APIFilters from "@/backend/utils/APIFilters";
 import { captureException } from "@/monitoring/sentry";
 import { withIntelligentRateLimit } from "@/utils/rateLimit";
-import { getToken } from "next-auth/jwt";
-import { isAuthenticatedUser } from "@/lib/auth-utils";
+import {
+  extractUserInfoFromRequest,
+  isAuthenticatedUser,
+} from "@/lib/auth-utils";
 
 /**
  * GET /api/orders/me
@@ -256,30 +258,6 @@ export const GET = withIntelligentRateLimit(
   {
     category: "api",
     action: "authenticatedRead", // 200 req/min pour utilisateurs authentifiés
-    extractUserInfo: async (req) => {
-      try {
-        const cookieName =
-          process.env.NODE_ENV === "production"
-            ? "__Secure-next-auth.session-token"
-            : "next-auth.session-token";
-
-        const token = await getToken({
-          req,
-          secret: process.env.NEXTAUTH_SECRET,
-          cookieName,
-        });
-
-        return {
-          userId: token?.user?._id || token?.user?.id || token?.sub,
-          email: token?.user?.email,
-        };
-      } catch (error) {
-        console.error(
-          "[ORDERS_ME] Error extracting user from JWT:",
-          error.message,
-        );
-        return {};
-      }
-    },
+    extractUserInfo: extractUserInfoFromRequest, // ✅ Remplacer la fonction personnalisée
   },
 );

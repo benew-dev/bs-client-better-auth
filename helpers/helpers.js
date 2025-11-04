@@ -82,7 +82,7 @@ export const objectToQueryString = (params) => {
 
   return Object.entries(params)
     .filter(
-      ([_, value]) => value !== undefined && value !== null && value !== ""
+      ([_, value]) => value !== undefined && value !== null && value !== "",
     )
     .map(([key, value]) => {
       if (Array.isArray(value)) {
@@ -125,11 +125,11 @@ export const getCookieName = () => {
   let cookieName = "";
 
   if (process.env.NODE_ENV === "development") {
-    cookieName = "next-auth.session-token";
+    cookieName = "__Secure-.session_token";
   }
 
   if (process.env.NODE_ENV === "production") {
-    cookieName = "__Secure-next-auth.session-token";
+    cookieName = "__Secure-__Secure-.session_token";
   }
 
   return cookieName;
