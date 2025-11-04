@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import { createContext, useState } from "react";
 import { toast } from "react-toastify";
-import { useSession } from "next-auth/react"; // ✅ AJOUT
 
 const AuthContext = createContext();
 
@@ -14,124 +13,10 @@ export const AuthProvider = ({ children }) => {
   const [updated, setUpdated] = useState(false);
 
   const router = useRouter();
-  // ✅ MODIFICATION: Gestion sécurisée de useSession
-  // eslint-disable-next-line no-unused-vars
-  const { data: session, update: updateSession } = useSession();
 
-  // ✅ NOUVELLE fonction pour synchroniser l'utilisateur avec session complète
-  // 1. METTRE À JOUR syncUserWithSession pour inclure l'adresse :
-
-  const syncUserWithSession = async (updatedUserData) => {
-    const currentUser = user;
-
-    // Créer un utilisateur complet avec l'adresse
-    const syncedUser = {
-      ...currentUser,
-      name: updatedUserData.name || currentUser?.name,
-      phone: updatedUserData.phone || currentUser?.phone,
-      avatar: updatedUserData.avatar || currentUser?.avatar,
-      address: updatedUserData.address || currentUser?.address, // ✅ AJOUT
-    };
-
-    console.log("Syncing user with session:", {
-      before: currentUser,
-      received: updatedUserData,
-      synced: syncedUser,
-    });
-
-    setUser(syncedUser);
-
-    if (updateSession && typeof updateSession === "function") {
-      try {
-        await updateSession({
-          user: syncedUser,
-        });
-        console.log("Session updated successfully");
-      } catch (error) {
-        console.warn("Failed to update session:", error);
-      }
-    } else {
-      console.warn("UpdateSession not available, skipping session sync");
-    }
-
-    return syncedUser;
-  };
-
-  const registerUser = async ({ name, phone, email, password }) => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // 3. Simple fetch avec timeout court
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s comme vos APIs
-
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-          body: JSON.stringify({ name, phone, email, password }),
-          signal: controller.signal,
-          credentials: "include",
-        },
-      );
-
-      clearTimeout(timeoutId);
-
-      const data = await res.json();
-
-      // 4. Gestion simple des erreurs (comme vos APIs)
-      if (!res.ok) {
-        let errorMessage = "";
-        switch (res.status) {
-          case 400:
-            errorMessage = data.message || "Données d'inscription invalides";
-            break;
-          case 409:
-            errorMessage = "Cet email est déjà utilisé";
-            break;
-          case 429:
-            errorMessage = "Trop de tentatives. Réessayez plus tard.";
-            break;
-          default:
-            errorMessage = data.message || "Erreur lors de l'inscription";
-        }
-
-        // Monitoring Sentry pour erreurs HTTP (non-critiques car attendues)
-        const httpError = new Error(`HTTP ${res.status}: ${errorMessage}`);
-        console.error(httpError, "AuthContext", "registerUser", false);
-
-        setError(errorMessage);
-        setLoading(false);
-        return;
-      }
-
-      // 5. Succès
-      if (data.success) {
-        toast.success("Inscription réussie!");
-        setTimeout(() => router.push("/login"), 1000);
-      }
-    } catch (error) {
-      // 6. Erreurs réseau/système - Monitoring critique
-      if (error.name === "AbortError") {
-        setError("La requête a pris trop de temps");
-        console.error(error, "AuthContext", "registerUser", false);
-      } else {
-        setError("Problème de connexion. Vérifiez votre connexion.");
-        // Erreur réseau critique
-        console.error(error, "AuthContext", "registerUser", true);
-      }
-
-      console.error("Registration error:", error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  /**
+   * Met à jour le profil utilisateur via l'API qui utilise Better Auth
+   */
   const updateProfile = async ({ name, phone, avatar, address }) => {
     try {
       setLoading(true);
@@ -212,27 +97,16 @@ export const AuthProvider = ({ children }) => {
 
       // Succès
       if (data.success && data.data?.updatedUser) {
-        console.log("User before update:", user);
-        console.log("Updated user data:", data.data.updatedUser);
-
-        // ✅ IMPORTANT: Appeler update() de NextAuth pour rafraîchir la session
-        if (updateSession) {
-          await updateSession({
-            ...data.data.updatedUser,
-            trigger: "update",
-          });
-        }
-
-        // Synchroniser avec la session
-        const syncedUser = await syncUserWithSession(data.data.updatedUser);
-
-        console.log("User after sync:", syncedUser);
-
         toast.success("Profil mis à jour avec succès!");
 
-        // Attendre un peu que la session soit mise à jour avant de rediriger
+        // Mettre à jour l'état local de l'utilisateur si nécessaire
+        setUser(data.data.updatedUser);
+        setUpdated(true);
+
+        // Redirection après mise à jour
         setTimeout(() => {
           router.push("/me");
+          router.refresh(); // Force le rafraîchissement pour récupérer la nouvelle session
         }, 500);
       }
     } catch (error) {
@@ -251,8 +125,9 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ... resto des méthodes inchangées
-
+  /**
+   * Met à jour le mot de passe utilisateur via l'API qui utilise Better Auth
+   */
   const updatePassword = async ({
     currentPassword,
     newPassword,
@@ -338,6 +213,9 @@ export const AuthProvider = ({ children }) => {
             errorMessage = "Session expirée. Veuillez vous reconnecter";
             setTimeout(() => router.push("/login"), 2000);
             break;
+          case 423:
+            errorMessage = data.message || "Compte temporairement verrouillé";
+            break;
           case 429:
             errorMessage = "Trop de tentatives. Réessayez plus tard.";
             break;
@@ -357,7 +235,12 @@ export const AuthProvider = ({ children }) => {
 
       if (data.success) {
         toast.success("Mot de passe mis à jour avec succès!");
-        router.replace("/me");
+
+        // Redirection après mise à jour
+        setTimeout(() => {
+          router.push("/me");
+          router.refresh(); // Force le rafraîchissement
+        }, 1000);
       }
     } catch (error) {
       if (error.name === "AbortError") {
@@ -373,6 +256,9 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  /**
+   * Envoie un email via l'API
+   */
   const sendEmail = async ({ subject, message }) => {
     try {
       setLoading(true);
@@ -484,13 +370,18 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Ajoutez cette méthode
+  /**
+   * Nettoie l'état utilisateur
+   */
   const clearUser = () => {
     setUser(null);
     setError(null);
     setUpdated(false);
   };
 
+  /**
+   * Nettoie les erreurs
+   */
   const clearErrors = () => {
     setError(null);
   };
@@ -505,13 +396,11 @@ export const AuthProvider = ({ children }) => {
         setUpdated,
         setUser,
         setLoading,
-        registerUser,
         updateProfile,
         updatePassword,
         sendEmail,
         clearUser,
         clearErrors,
-        syncUserWithSession, // ✅ AJOUT: Exposer la fonction si besoin ailleurs
       }}
     >
       {children}

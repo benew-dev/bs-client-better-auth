@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { toast } from 'react-toastify';
-import DOMPurify from 'dompurify';
+import { useContext, useState, useEffect, useCallback, useRef } from "react";
+import { toast } from "react-toastify";
+import DOMPurify from "dompurify";
 
-import AuthContext from '@/context/AuthContext';
+import AuthContext from "@/context/AuthContext";
 import {
   ArrowLeft,
   Check,
@@ -12,8 +12,8 @@ import {
   Eye,
   EyeOff,
   LoaderCircle,
-} from 'lucide-react';
-import { useRouter } from 'next/navigation';
+} from "lucide-react";
+import { useRouter } from "next/navigation";
 // import { validatePasswordUpdate } from '@/helpers/schemas';
 
 /**
@@ -33,9 +33,9 @@ const UpdatePassword = ({ userId, referer }) => {
 
   // États du formulaire
   const [formState, setFormState] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
   });
 
   // États de validation et d'interface
@@ -70,7 +70,7 @@ const UpdatePassword = ({ userId, referer }) => {
 
   // Sanitize input pour prévenir XSS
   const sanitizeInput = useCallback((value) => {
-    if (typeof value === 'string') {
+    if (typeof value === "string") {
       return DOMPurify.sanitize(value);
     }
     return value;
@@ -89,15 +89,15 @@ const UpdatePassword = ({ userId, referer }) => {
       };
 
       // Vérifier la correspondance entre les mots de passe
-      if (name === 'newPassword' || name === 'confirmPassword') {
+      if (name === "newPassword" || name === "confirmPassword") {
         // Si on modifie le nouveau mot de passe
-        if (name === 'newPassword') {
+        if (name === "newPassword") {
           if (newState.confirmPassword && newState.confirmPassword.length > 0) {
             // Mettre à jour l'erreur en fonction de si les mots de passe correspondent
             if (sanitizedValue !== newState.confirmPassword) {
               setValidationErrors((prev) => ({
                 ...prev,
-                confirmPassword: 'Les mots de passe ne correspondent pas',
+                confirmPassword: "Les mots de passe ne correspondent pas",
               }));
             } else {
               // Important: supprimer l'erreur quand les mots de passe correspondent
@@ -111,13 +111,13 @@ const UpdatePassword = ({ userId, referer }) => {
         }
 
         // Si on modifie la confirmation du mot de passe
-        if (name === 'confirmPassword') {
+        if (name === "confirmPassword") {
           if (sanitizedValue.length > 0) {
             // Vérifier si la confirmation correspond au nouveau mot de passe
             if (sanitizedValue !== newState.newPassword) {
               setValidationErrors((prev) => ({
                 ...prev,
-                confirmPassword: 'Les mots de passe ne correspondent pas',
+                confirmPassword: "Les mots de passe ne correspondent pas",
               }));
             } else {
               // Important: supprimer l'erreur quand les mots de passe correspondent
@@ -145,7 +145,7 @@ const UpdatePassword = ({ userId, referer }) => {
     setFormTouched(true);
 
     // Effacer l'erreur de ce champ quand l'utilisateur tape
-    if (validationErrors[name] && name !== 'confirmPassword') {
+    if (validationErrors[name] && name !== "confirmPassword") {
       setValidationErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[name];
@@ -154,7 +154,7 @@ const UpdatePassword = ({ userId, referer }) => {
     }
 
     // Si on est en train de calculer la force du mot de passe
-    if (name === 'newPassword') {
+    if (name === "newPassword") {
       calculatePasswordStrength(sanitizedValue);
     }
   }, []);
@@ -195,11 +195,11 @@ const UpdatePassword = ({ userId, referer }) => {
 
   // Récupérer le label et la couleur de force du mot de passe
   const getPasswordStrengthInfo = useCallback(() => {
-    if (passwordStrength < 30) return { label: 'Faible', color: 'bg-red-500' };
+    if (passwordStrength < 30) return { label: "Faible", color: "bg-red-500" };
     if (passwordStrength < 60)
-      return { label: 'Moyen', color: 'bg-yellow-500' };
-    if (passwordStrength < 80) return { label: 'Bon', color: 'bg-blue-500' };
-    return { label: 'Fort', color: 'bg-green-500' };
+      return { label: "Moyen", color: "bg-yellow-500" };
+    if (passwordStrength < 80) return { label: "Bon", color: "bg-blue-500" };
+    return { label: "Fort", color: "bg-green-500" };
   }, [passwordStrength]);
 
   // Ajouter cette fonction de gestion du retour
@@ -207,14 +207,14 @@ const UpdatePassword = ({ userId, referer }) => {
     router.back(); // ou router.push('/me') si vous voulez forcer le retour à /me
   };
 
-  // Fonction de soumission du formulaire
+  // NOUVEAU CODE - Compatible Better Auth
   const submitHandler = async (e) => {
     e.preventDefault();
 
     setIsSubmitting(true);
 
     try {
-      // Soumettre la mise à jour du mot de passe
+      // Soumettre la mise à jour du mot de passe via l'API qui utilise Better Auth
       await updatePassword({
         currentPassword: formState.currentPassword,
         newPassword: formState.newPassword,
@@ -222,30 +222,35 @@ const UpdatePassword = ({ userId, referer }) => {
       });
 
       // Succès (si aucune erreur n'est déclenchée)
-      toast.success('Mot de passe mis à jour avec succès');
+      toast.success("Mot de passe mis à jour avec succès");
 
       // Réinitialiser le formulaire
       setFormState({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: '',
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
       });
 
       setFormTouched(false);
       setPasswordStrength(0);
 
       // Log anonymisé pour monitoring (en production uniquement)
-      if (process.env.NODE_ENV === 'production') {
-        console.info('Password updated', {
+      if (process.env.NODE_ENV === "production") {
+        console.info("Password updated", {
           userId: userId
             ? `${userId.substring(0, 2)}...${userId.slice(-2)}`
-            : 'unknown',
-          referer: referer ? referer.substring(0, 10) + '...' : 'direct',
+            : "unknown",
+          referer: referer ? referer.substring(0, 10) + "..." : "direct",
         });
       }
+
+      // Redirection après succès
+      setTimeout(() => {
+        router.push("/me");
+      }, 1000);
     } catch (error) {
       // Géré par l'effect qui écoute les erreurs du contexte
-      console.error('Password update error:', error.message);
+      console.error("Password update error:", error.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -262,7 +267,7 @@ const UpdatePassword = ({ userId, referer }) => {
   // Générer les classes pour les inputs en fonction des erreurs
   const getInputClassName = (fieldName) => {
     const baseClass =
-      'appearance-none border rounded-md py-2 px-3 w-full transition-colors duration-200';
+      "appearance-none border rounded-md py-2 px-3 w-full transition-colors duration-200";
 
     if (validationErrors[fieldName]) {
       return `${baseClass} border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-500`;
@@ -311,8 +316,8 @@ const UpdatePassword = ({ userId, referer }) => {
               id="currentPassword"
               name="currentPassword"
               ref={currentPasswordRef}
-              type={showPassword.current ? 'text' : 'password'}
-              className={getInputClassName('currentPassword')}
+              type={showPassword.current ? "text" : "password"}
+              className={getInputClassName("currentPassword")}
               placeholder="Saisissez votre mot de passe actuel"
               value={formState.currentPassword}
               onChange={handleInputChange}
@@ -321,19 +326,19 @@ const UpdatePassword = ({ userId, referer }) => {
               aria-invalid={!!validationErrors.currentPassword}
               aria-describedby={
                 validationErrors.currentPassword
-                  ? 'currentPassword-error'
+                  ? "currentPassword-error"
                   : undefined
               }
             />
             <button
               type="button"
               className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600"
-              onClick={() => togglePasswordVisibility('current')}
+              onClick={() => togglePasswordVisibility("current")}
               tabIndex="-1"
               aria-label={
                 showPassword.current
-                  ? 'Masquer le mot de passe'
-                  : 'Afficher le mot de passe'
+                  ? "Masquer le mot de passe"
+                  : "Afficher le mot de passe"
               }
             >
               {showPassword.current ? <EyeOff /> : <Eye />}
@@ -357,8 +362,8 @@ const UpdatePassword = ({ userId, referer }) => {
             <input
               id="newPassword"
               name="newPassword"
-              type={showPassword.new ? 'text' : 'password'}
-              className={getInputClassName('newPassword')}
+              type={showPassword.new ? "text" : "password"}
+              className={getInputClassName("newPassword")}
               placeholder="Créez un nouveau mot de passe fort"
               value={formState.newPassword}
               onChange={handleInputChange}
@@ -367,19 +372,19 @@ const UpdatePassword = ({ userId, referer }) => {
               aria-invalid={!!validationErrors.newPassword}
               aria-describedby={
                 validationErrors.newPassword
-                  ? 'newPassword-error'
-                  : 'password-requirements'
+                  ? "newPassword-error"
+                  : "password-requirements"
               }
             />
             <button
               type="button"
               className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600"
-              onClick={() => togglePasswordVisibility('new')}
+              onClick={() => togglePasswordVisibility("new")}
               tabIndex="-1"
               aria-label={
                 showPassword.new
-                  ? 'Masquer le mot de passe'
-                  : 'Afficher le mot de passe'
+                  ? "Masquer le mot de passe"
+                  : "Afficher le mot de passe"
               }
             >
               {showPassword.current ? <EyeOff /> : <Eye />}
@@ -396,7 +401,7 @@ const UpdatePassword = ({ userId, referer }) => {
             >
               <li
                 className={`flex flex-row
-                  ${formState.newPassword.length >= 8 ? 'text-green-600' : ''}
+                  ${formState.newPassword.length >= 8 ? "text-green-600" : ""}
                 `}
               >
                 {formState.newPassword.length >= 8 ? (
@@ -408,7 +413,7 @@ const UpdatePassword = ({ userId, referer }) => {
               </li>
               <li
                 className={`flex flex-row
-                  ${/[A-Z]/.test(formState.newPassword) ? 'text-green-600' : ''}
+                  ${/[A-Z]/.test(formState.newPassword) ? "text-green-600" : ""}
                 `}
               >
                 {/[A-Z]/.test(formState.newPassword) ? (
@@ -420,7 +425,7 @@ const UpdatePassword = ({ userId, referer }) => {
               </li>
               <li
                 className={`flex flex-row
-                  ${/[a-z]/.test(formState.newPassword) ? 'text-green-600' : ''}
+                  ${/[a-z]/.test(formState.newPassword) ? "text-green-600" : ""}
                 `}
               >
                 {/[a-z]/.test(formState.newPassword) ? (
@@ -432,7 +437,7 @@ const UpdatePassword = ({ userId, referer }) => {
               </li>
               <li
                 className={`flex flex-row
-                  ${/\d/.test(formState.newPassword) ? 'text-green-600' : ''}
+                  ${/\d/.test(formState.newPassword) ? "text-green-600" : ""}
                 `}
               >
                 {/\d/.test(formState.newPassword) ? (
@@ -446,8 +451,8 @@ const UpdatePassword = ({ userId, referer }) => {
                 className={`flex flex-row
                   ${
                     /[@$!%*?&#]/.test(formState.newPassword)
-                      ? 'text-green-600'
-                      : ''
+                      ? "text-green-600"
+                      : ""
                   }
                 `}
               >
@@ -465,17 +470,17 @@ const UpdatePassword = ({ userId, referer }) => {
             <div className="mt-2">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs text-gray-600">
-                  Force du mot de passe:{' '}
+                  Force du mot de passe:{" "}
                 </span>
                 <span
                   className={`text-xs font-semibold ${
                     passwordStrength < 30
-                      ? 'text-red-600'
+                      ? "text-red-600"
                       : passwordStrength < 60
-                        ? 'text-yellow-600'
+                        ? "text-yellow-600"
                         : passwordStrength < 80
-                          ? 'text-blue-600'
-                          : 'text-green-600'
+                          ? "text-blue-600"
+                          : "text-green-600"
                   }`}
                 >
                   {strengthInfo.label}
@@ -502,8 +507,8 @@ const UpdatePassword = ({ userId, referer }) => {
             <input
               id="confirmPassword"
               name="confirmPassword"
-              type={showPassword.confirm ? 'text' : 'password'}
-              className={getInputClassName('confirmPassword')}
+              type={showPassword.confirm ? "text" : "password"}
+              className={getInputClassName("confirmPassword")}
               placeholder="Confirmez votre nouveau mot de passe"
               value={formState.confirmPassword}
               onChange={handleInputChange}
@@ -511,19 +516,19 @@ const UpdatePassword = ({ userId, referer }) => {
               aria-invalid={!!validationErrors.confirmPassword}
               aria-describedby={
                 validationErrors.confirmPassword
-                  ? 'confirmPassword-error'
+                  ? "confirmPassword-error"
                   : undefined
               }
             />
             <button
               type="button"
               className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600"
-              onClick={() => togglePasswordVisibility('confirm')}
+              onClick={() => togglePasswordVisibility("confirm")}
               tabIndex="-1"
               aria-label={
                 showPassword.confirm
-                  ? 'Masquer le mot de passe'
-                  : 'Afficher le mot de passe'
+                  ? "Masquer le mot de passe"
+                  : "Afficher le mot de passe"
               }
             >
               {showPassword.confirm ? <EyeOff /> : <Eye />}
@@ -551,8 +556,8 @@ const UpdatePassword = ({ userId, referer }) => {
           className={`mt-4 px-4 py-2 text-center w-full inline-block text-white rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
             isSubmitting ||
             (formTouched && Object.keys(validationErrors).length > 0)
-              ? 'bg-blue-400 cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'
+              ? "bg-blue-400 cursor-not-allowed"
+              : "bg-blue-600 hover:bg-blue-700 focus:ring-blue-500"
           }`}
         >
           {isSubmitting ? (
@@ -561,7 +566,7 @@ const UpdatePassword = ({ userId, referer }) => {
               Mise à jour en cours...
             </span>
           ) : (
-            'Mettre à jour le mot de passe'
+            "Mettre à jour le mot de passe"
           )}
         </button>
       </form>

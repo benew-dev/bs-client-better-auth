@@ -180,7 +180,7 @@ const UpdateProfile = ({ userId, initialEmail, referer }) => {
     router.back();
   };
 
-  // Soumission du formulaire
+  // NOUVEAU CODE - Compatible Better Auth
   const submitHandler = async (e) => {
     e.preventDefault();
 
@@ -195,6 +195,7 @@ const UpdateProfile = ({ userId, initialEmail, referer }) => {
 
       const { name, phone, avatar, address } = formState;
 
+      // Appel de l'API qui utilise Better Auth en backend
       await updateProfile({ name, phone, avatar, address });
 
       setFormTouched(false);
@@ -210,6 +211,11 @@ const UpdateProfile = ({ userId, initialEmail, referer }) => {
           referer: referer ? `${referer.substring(0, 10)}...` : "direct",
         });
       }
+
+      // Redirection après succès
+      setTimeout(() => {
+        router.push("/me");
+      }, 500);
     } catch (error) {
       console.error("Erreur de mise à jour du profil:", error);
       toast.error(

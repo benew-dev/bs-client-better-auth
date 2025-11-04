@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { headers } from "next/headers";
 import cloudinary from "cloudinary";
 import dbConnect from "@/backend/config/dbConnect";
 import { captureException, captureMessage } from "@/monitoring/sentry";
 import { withIntelligentRateLimit } from "@/utils/rateLimit";
-import { isAuthenticatedUser } from "@/lib/auth-utils";
+import { getAuth } from "@/lib/auth";
+import { extractUserInfoFromRequest } from "@/lib/auth-utils";
 
 // Configuration Cloudinary
 cloudinary.config({
@@ -24,10 +25,7 @@ cloudinary.config({
 export const POST = withIntelligentRateLimit(
   async function (req) {
     try {
-      // 1. Vérifier l'authentification
-      const user = await isAuthenticatedUser();
-
-      // 2. Vérifier les variables d'environnement
+      // 1. Vérifier les variables d'environnement
       if (
         !process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ||
         !process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY ||
@@ -47,16 +45,25 @@ export const POST = withIntelligentRateLimit(
         );
       }
 
-      if (!user) {
+      // 2. Authentification avec Better Auth
+      const auth = await getAuth();
+      const session = await auth.api.getSession({
+        headers: await headers(),
+      });
+
+      if (!session?.user) {
         return NextResponse.json(
           {
             success: false,
-            message: "User not found",
+            message: "Not authenticated",
           },
-          { status: 404 },
+          { status: 401 },
         );
       }
 
+      const user = session.user;
+
+      // 3. Vérifier que le compte est actif
       if (user.isActive === false) {
         return NextResponse.json(
           {
@@ -67,7 +74,7 @@ export const POST = withIntelligentRateLimit(
         );
       }
 
-      // 3. Connexion DB pour vérifier l'utilisateur
+      // 4. Connexion DB (pour logging/vérifications supplémentaires si nécessaire)
       await dbConnect();
 
       // 5. Parser et valider le body
@@ -101,10 +108,10 @@ export const POST = withIntelligentRateLimit(
 
       const { paramsToSign } = body;
 
-      // Configuration du dossier et restrictions
+      // 7. Configuration du dossier et restrictions
       paramsToSign.folder = "buyitnow/avatars";
 
-      // 9. Générer la signature
+      // 8. Générer la signature
       let signature;
       try {
         signature = cloudinary.utils.api_sign_request(
@@ -136,7 +143,7 @@ export const POST = withIntelligentRateLimit(
 
       console.log("Signature generated successfully");
 
-      // 10. Logger l'activité (sans données sensibles)
+      // 9. Logger l'activité (sans données sensibles)
       if (process.env.NODE_ENV === "production") {
         console.info("Cloudinary signature generated", {
           userId: user.id.toString().substring(0, 8) + "...",
@@ -151,7 +158,7 @@ export const POST = withIntelligentRateLimit(
         });
       }
 
-      // 12. Retourner la signature avec les paramètres nécessaires
+      // 10. Retourner la signature avec les paramètres nécessaires
       return NextResponse.json(
         {
           success: true,
@@ -176,7 +183,6 @@ export const POST = withIntelligentRateLimit(
           route: "sign-cloudinary-params",
         },
         extra: {
-          userId: req.user?.email,
           errorName: error.name,
         },
       });
@@ -199,30 +205,6 @@ export const POST = withIntelligentRateLimit(
   {
     category: "api",
     action: "upload",
-    extractUserInfo: async (req) => {
-      try {
-        const cookieName =
-          process.env.NODE_ENV === "production"
-            ? "__Secure-next-auth.session-token"
-            : "next-auth.session-token";
-
-        const token = await getToken({
-          req,
-          secret: process.env.NEXTAUTH_SECRET,
-          cookieName,
-        });
-
-        return {
-          userId: token?.user?._id || token?.user?.id || token?.sub,
-          email: token?.user?.email,
-        };
-      } catch (error) {
-        console.error(
-          "[CLOUDINARY_SIGN] Error extracting user from JWT:",
-          error.message,
-        );
-        return {};
-      }
-    },
+    extractUserInfo: extractUserInfoFromRequest,
   },
 );

@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
-import dbConnect from "@/backend/config/dbConnect";
+import { headers } from "next/headers";
 import { validateProfile } from "@/helpers/validation/schemas/user";
 import { captureException } from "@/monitoring/sentry";
 import { withIntelligentRateLimit } from "@/utils/rateLimit";
-import { isAuthenticatedUser } from "@/lib/auth-utils";
+import { getAuth } from "@/lib/auth";
+import { extractUserInfoFromRequest } from "@/lib/auth-utils";
 
 /**
  * PUT /api/auth/me/update
- * Met à jour le profil utilisateur AVEC adresse
+ * Met à jour le profil utilisateur AVEC adresse via Better Auth
  * Rate limit: Configuration intelligente - api.write (30 req/min pour utilisateurs authentifiés)
  *
  * Headers de sécurité gérés par next.config.mjs pour /api/auth/*
@@ -16,17 +16,30 @@ import { isAuthenticatedUser } from "@/lib/auth-utils";
 export const PUT = withIntelligentRateLimit(
   async function (req) {
     try {
-      const user = await isAuthenticatedUser();
+      // 1. Authentification avec Better Auth
+      const auth = await getAuth();
+      const session = await auth.api.getSession({
+        headers: await headers(),
+      });
 
-      if (!user) {
+      if (!session?.user) {
         return NextResponse.json(
-          { success: false, message: "User not found" },
-          { status: 404 },
+          { success: false, message: "Not authenticated" },
+          { status: 401 },
         );
       }
 
-      await dbConnect();
+      const user = session.user;
 
+      // 2. Vérifier que le compte est actif
+      if (user.isActive === false) {
+        return NextResponse.json(
+          { success: false, message: "Account is deactivated" },
+          { status: 403 },
+        );
+      }
+
+      // 3. Parser le body
       let profileData;
       try {
         profileData = await req.json();
@@ -37,7 +50,7 @@ export const PUT = withIntelligentRateLimit(
         );
       }
 
-      // Validation avec Yup (inclut maintenant l'adresse)
+      // 4. Validation avec Yup (inclut l'adresse)
       const validation = await validateProfile(profileData);
       if (!validation.isValid) {
         return NextResponse.json(
@@ -50,7 +63,7 @@ export const PUT = withIntelligentRateLimit(
         );
       }
 
-      // MODIFIÉ: Champs autorisés incluent maintenant l'adresse
+      // 5. Préparer les données à mettre à jour
       const allowedFields = ["name", "phone", "avatar", "address"];
       const updateData = {};
 
@@ -67,15 +80,11 @@ export const PUT = withIntelligentRateLimit(
         );
       }
 
-      const updatedUser = await User.findOneAndUpdate(
-        { email: req.user.email },
-        updateData,
-        {
-          new: true,
-          runValidators: true,
-          select: "-password",
-        },
-      );
+      // 6. Mise à jour via Better Auth API
+      const updatedUser = await auth.api.updateUser({
+        body: updateData,
+        headers: await headers(),
+      });
 
       if (!updatedUser) {
         return NextResponse.json(
@@ -84,21 +93,21 @@ export const PUT = withIntelligentRateLimit(
         );
       }
 
-      // MODIFIÉ: Réponse inclut maintenant l'adresse
+      // 7. Retourner la réponse avec les données mises à jour
       return NextResponse.json(
         {
           success: true,
           message: "Profile updated successfully",
           data: {
             updatedUser: {
-              _id: updatedUser.id,
+              id: updatedUser.id,
               name: updatedUser.name,
               email: updatedUser.email,
               phone: updatedUser.phone,
               avatar: updatedUser.avatar,
-              address: updatedUser.address, // NOUVEAU
+              address: updatedUser.address,
               role: updatedUser.role,
-              isActive: updatedUser.isActive || false,
+              isActive: updatedUser.isActive || true,
             },
           },
         },
@@ -128,30 +137,6 @@ export const PUT = withIntelligentRateLimit(
   {
     category: "api",
     action: "write",
-    extractUserInfo: async (req) => {
-      try {
-        const cookieName =
-          process.env.NODE_ENV === "production"
-            ? "__Secure-next-auth.session-token"
-            : "next-auth.session-token";
-
-        const token = await getToken({
-          req,
-          secret: process.env.NEXTAUTH_SECRET,
-          cookieName,
-        });
-
-        return {
-          userId: token?.user?._id || token?.user?.id || token?.sub,
-          email: token?.user?.email,
-        };
-      } catch (error) {
-        console.error(
-          "[UPDATE_PROFILE] Error extracting user from JWT:",
-          error.message,
-        );
-        return {};
-      }
-    },
+    extractUserInfo: extractUserInfoFromRequest,
   },
 );
