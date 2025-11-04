@@ -10,12 +10,16 @@ import AuthContext from "@/context/AuthContext";
 import { captureException } from "@/monitoring/sentry";
 import { ArrowLeft, LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useSession } from "@/lib/auth-client";
 
 /**
  * Composant de mise à jour de profil utilisateur avec adresse
  */
 const UpdateProfile = ({ userId, initialEmail, referer }) => {
-  const { user, error, loading, updateProfile, clearErrors } =
+  const { data: session } = useSession();
+  const user = session.user;
+
+  const { error, loading, updateProfile, clearErrors } =
     useContext(AuthContext);
 
   const formRef = useRef(null);
