@@ -5,7 +5,6 @@ import Product from "@/backend/models/product";
 import { DECREASE, INCREASE } from "@/helpers/constants";
 import { captureException } from "@/monitoring/sentry";
 import { withCartRateLimit, withIntelligentRateLimit } from "@/utils/rateLimit";
-import { getToken } from "next-auth/jwt";
 import {
   extractUserInfoFromRequest,
   getSessionFromRequest,

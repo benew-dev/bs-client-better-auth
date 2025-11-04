@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
 import dbConnect from "@/backend/config/dbConnect";
 import Category from "@/backend/models/category";
 import { captureException } from "@/monitoring/sentry";
