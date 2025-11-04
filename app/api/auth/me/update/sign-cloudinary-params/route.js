@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
-import { headers } from "next/headers";
 import cloudinary from "cloudinary";
 import dbConnect from "@/backend/config/dbConnect";
 import { captureException, captureMessage } from "@/monitoring/sentry";
 import { withIntelligentRateLimit } from "@/utils/rateLimit";
-import { getAuth } from "@/lib/auth";
-import { extractUserInfoFromRequest } from "@/lib/auth-utils";
+import {
+  extractUserInfoFromRequest,
+  isAuthenticatedUser,
+} from "@/lib/auth-utils";
 
 // Configuration Cloudinary
 cloudinary.config({
@@ -45,23 +46,19 @@ export const POST = withIntelligentRateLimit(
         );
       }
 
-      // 2. Authentification avec Better Auth
-      const auth = await getAuth();
-      const session = await auth.api.getSession({
-        headers: await headers(),
-      });
+      // Vérifier l'authentification
+      const user = await isAuthenticatedUser();
 
-      if (!session?.user) {
+      if (!user) {
         return NextResponse.json(
           {
             success: false,
-            message: "Not authenticated",
+            message: "User not found",
+            code: "USER_NOT_FOUND",
           },
-          { status: 401 },
+          { status: 404 },
         );
       }
-
-      const user = session.user;
 
       // 3. Vérifier que le compte est actif
       if (user.isActive === false) {

@@ -4,7 +4,10 @@ import { validateProfile } from "@/helpers/validation/schemas/user";
 import { captureException } from "@/monitoring/sentry";
 import { withIntelligentRateLimit } from "@/utils/rateLimit";
 import { getAuth } from "@/lib/auth";
-import { extractUserInfoFromRequest } from "@/lib/auth-utils";
+import {
+  extractUserInfoFromRequest,
+  isAuthenticatedUser,
+} from "@/lib/auth-utils";
 
 /**
  * PUT /api/auth/me/update
@@ -16,20 +19,19 @@ import { extractUserInfoFromRequest } from "@/lib/auth-utils";
 export const PUT = withIntelligentRateLimit(
   async function (req) {
     try {
-      // 1. Authentification avec Better Auth
-      const auth = await getAuth();
-      const session = await auth.api.getSession({
-        headers: await headers(),
-      });
+      // Vérifier l'authentification
+      const user = await isAuthenticatedUser();
 
-      if (!session?.user) {
+      if (!user) {
         return NextResponse.json(
-          { success: false, message: "Not authenticated" },
-          { status: 401 },
+          {
+            success: false,
+            message: "User not found",
+            code: "USER_NOT_FOUND",
+          },
+          { status: 404 },
         );
       }
-
-      const user = session.user;
 
       // 2. Vérifier que le compte est actif
       if (user.isActive === false) {
@@ -79,6 +81,8 @@ export const PUT = withIntelligentRateLimit(
           { status: 400 },
         );
       }
+
+      const auth = await getAuth();
 
       // 6. Mise à jour via Better Auth API
       const updatedUser = await auth.api.updateUser({

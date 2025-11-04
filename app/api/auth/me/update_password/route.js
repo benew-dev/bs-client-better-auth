@@ -5,7 +5,10 @@ import { validatePasswordUpdate } from "@/helpers/validation/schemas/auth";
 import { captureException } from "@/monitoring/sentry";
 import { withIntelligentRateLimit } from "@/utils/rateLimit";
 import { getAuth } from "@/lib/auth";
-import { extractUserInfoFromRequest } from "@/lib/auth-utils";
+import {
+  extractUserInfoFromRequest,
+  isAuthenticatedUser,
+} from "@/lib/auth-utils";
 
 /**
  * PUT /api/auth/me/update_password
@@ -19,22 +22,19 @@ export const PUT = withIntelligentRateLimit(
     try {
       // 1. Authentification avec Better Auth
       const auth = await getAuth();
-      const session = await auth.api.getSession({
-        headers: await headers(),
-      });
+      // Vérifier l'authentification
+      const user = await isAuthenticatedUser();
 
-      if (!session?.user) {
+      if (!user) {
         return NextResponse.json(
           {
             success: false,
-            message: "Not authenticated",
-            code: "NOT_AUTHENTICATED",
+            message: "User not found",
+            code: "USER_NOT_FOUND",
           },
-          { status: 401 },
+          { status: 404 },
         );
       }
-
-      const user = session.user;
 
       // 2. Parser les données
       let passwordData;
