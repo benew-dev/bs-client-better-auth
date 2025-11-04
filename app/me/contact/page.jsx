@@ -1,7 +1,7 @@
 import { lazy, Suspense } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { getAuthenticatedUser } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/lib/auth-utils";
 
 // Vous avez déjà cette ligne, gardez-la !
 export const dynamic = "force-dynamic";
@@ -76,10 +76,8 @@ export async function generateMetadata() {
  */
 export default async function ContactPage() {
   // Security check at render time
-  const headersList = await headers();
-
   // AJOUTER : Vérification d'authentification
-  const user = await getAuthenticatedUser(headersList);
+  const user = await getAuthenticatedUser();
   if (!user) {
     console.log("User not authenticated, redirecting to login");
     return redirect("/login?callbackUrl=/me/contact");
@@ -87,6 +85,7 @@ export default async function ContactPage() {
 
   // AJOUTER après la vérification d'authentification :
   // Journal d'accès anonymisé pour la sécurité
+  const headersList = await headers();
   const clientIp = (headersList.get("x-forwarded-for") || "")
     .split(",")
     .shift()
@@ -98,8 +97,8 @@ export default async function ContactPage() {
     userAgent: userAgent?.substring(0, 100),
     referer: referrer?.substring(0, 200),
     ip: anonymizedIp,
-    userId: user._id
-      ? `${user._id.substring(0, 2)}...${user._id.slice(-2)}`
+    userId: user.id
+      ? `${user.id.substring(0, 2)}...${user.id.slice(-2)}`
       : "unknown",
   });
 
@@ -124,7 +123,7 @@ export default async function ContactPage() {
           <Contact
             // Pass the referrer information to the client component if needed
             referrerValidated={isInternalReferrer}
-            userId={user._id} // AJOUTER si le composant Contact en a besoin
+            userId={user.id} // AJOUTER si le composant Contact en a besoin
           />
         </Suspense>
       </section>

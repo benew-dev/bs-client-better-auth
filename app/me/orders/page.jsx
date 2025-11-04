@@ -5,7 +5,7 @@ import { captureException } from "@/monitoring/sentry";
 
 import logger from "@/utils/logger";
 import { getCookieName } from "@/helpers/helpers";
-import { getAuthenticatedUser } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/lib/auth-utils";
 
 // Ajoutez après les imports
 export const dynamic = "force-dynamic";
@@ -23,8 +23,7 @@ const getAllOrders = async (searchParams) => {
     .substring(2, 7)}`;
 
   // Première vérification d'authentification
-  const headersList = await headers();
-  const user = await getAuthenticatedUser(headersList);
+  const user = await getAuthenticatedUser();
 
   if (!user) {
     logger.warn(
@@ -40,8 +39,8 @@ const getAllOrders = async (searchParams) => {
   logger.info("Orders page accessed", {
     requestId,
     page: searchParams?.page || 1,
-    userId: user._id
-      ? `${user._id.substring(0, 2)}...${user._id.slice(-2)}`
+    userId: user.id
+      ? `${user.id.substring(0, 2)}...${user.id.slice(-2)}`
       : "unknown",
     action: "orders_page_access",
   });

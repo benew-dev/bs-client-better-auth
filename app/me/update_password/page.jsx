@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { captureException } from "@/monitoring/sentry";
 import UpdatePassword from "@/components/auth/UpdatePassword";
-import { getAuthenticatedUser } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/lib/auth-utils";
 
 // Force dynamic rendering pour garantir l'état d'authentification à jour
 export const dynamic = "force-dynamic";
@@ -29,14 +29,14 @@ export const metadata = {
  * avant de rendre le composant client
  */
 async function PasswordPage() {
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    console.log("User not authenticated, redirecting to login");
+    return redirect("/login?callbackUrl=/me/update_password");
+  }
+
   try {
     const headersList = await headers();
-    const user = await getAuthenticatedUser(headersList);
-    if (!user) {
-      console.log("User not authenticated, redirecting to login");
-      return redirect("/login?callbackUrl=/me/update_password");
-    }
-
     const userAgent = headersList.get("user-agent") || "unknown";
     const referer = headersList.get("referer") || "direct";
 
@@ -51,8 +51,8 @@ async function PasswordPage() {
       userAgent: userAgent?.substring(0, 100),
       referer: referer?.substring(0, 200),
       ip: anonymizedIp,
-      userId: user._id
-        ? `${user._id.substring(0, 2)}...${user._id.slice(-2)}`
+      userId: user.id
+        ? `${user.id.substring(0, 2)}...${user.id.slice(-2)}`
         : "unknown",
     });
 

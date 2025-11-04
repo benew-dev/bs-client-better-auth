@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { captureException } from "@/monitoring/sentry";
 import UpdateProfile from "@/components/auth/UpdateProfile";
-import { getAuthenticatedUser } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/lib/auth-utils";
 
 // Force dynamic rendering pour garantir l'état d'authentification à jour
 export const dynamic = "force-dynamic";
@@ -28,14 +28,14 @@ export const metadata = {
  * avant de rendre le composant client
  */
 async function UpdateProfilePage() {
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    console.log("User not authenticated, redirecting to login");
+    return redirect("/login?callbackUrl=/me/update");
+  }
+
   try {
     const headersList = await headers();
-    const user = await getAuthenticatedUser(headersList);
-    if (!user) {
-      console.log("User not authenticated, redirecting to login");
-      return redirect("/login?callbackUrl=/me/update");
-    }
-
     // Récupérer les en-têtes pour le logging et la sécurité
     const userAgent = headersList.get("user-agent") || "unknown";
     const referer = headersList.get("referer") || "direct";
@@ -51,8 +51,8 @@ async function UpdateProfilePage() {
       userAgent: userAgent?.substring(0, 100),
       referer: referer?.substring(0, 200),
       ip: anonymizedIp,
-      userId: user._id
-        ? `${user._id.substring(0, 2)}...${user._id.slice(-2)}`
+      userId: user.id
+        ? `${user.id.substring(0, 2)}...${user.id.slice(-2)}`
         : "unknown",
     });
 
@@ -87,7 +87,7 @@ async function UpdateProfilePage() {
           <div className="bg-white py-8 px-4 sm:px-8 shadow sm:rounded-lg">
             <Suspense>
               <UpdateProfile
-                userId={user._id}
+                userId={user.id}
                 initialEmail={user.email}
                 referer={referer}
               />
