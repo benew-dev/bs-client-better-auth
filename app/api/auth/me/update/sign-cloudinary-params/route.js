@@ -138,8 +138,6 @@ export const POST = withIntelligentRateLimit(
         );
       }
 
-      console.log("Signature generated successfully");
-
       // 9. Logger l'activité (sans données sensibles)
       if (process.env.NODE_ENV === "production") {
         console.info("Cloudinary signature generated", {
