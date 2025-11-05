@@ -52,10 +52,10 @@ const Search = ({ setLoading }) => {
           return;
         }
 
-        // Navigation vers la page de résultats
-        router.push(`/?keyword=${encodeURIComponent(keyword.trim())}`);
         setLoading(false);
         setIsSubmitting(false);
+        // Navigation vers la page de résultats
+        router.push(`/?keyword=${encodeURIComponent(keyword.trim())}`);
       } catch (error) {
         // Gestion d'erreur améliorée
         if (error.inner && error.inner.length) {
