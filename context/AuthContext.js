@@ -122,7 +122,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   /**
-   * Met à jour le mot de passe utilisateur via l'API qui utilise Better Auth
+   * Met à jour le mot de passe utilisateur via Better Auth
    */
   const updatePassword = async ({
     currentPassword,
@@ -174,14 +174,14 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
-      // Simple fetch avec timeout
+      // ✅ CHANGEMENT : Utiliser l'API Better Auth native
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
 
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/me/update_password`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/change-password`, // ✅ Route Better Auth
         {
-          method: "PUT",
+          method: "POST", // ✅ POST au lieu de PUT
           headers: {
             "Content-Type": "application/json",
             Accept: "application/json",
@@ -189,7 +189,7 @@ export const AuthProvider = ({ children }) => {
           body: JSON.stringify({
             currentPassword,
             newPassword,
-            confirmPassword,
+            revokeOtherSessions: true, // ✅ Déconnecter les autres sessions
           }),
           signal: controller.signal,
           credentials: "include",
@@ -197,29 +197,30 @@ export const AuthProvider = ({ children }) => {
       );
 
       clearTimeout(timeoutId);
-      const data = await res.json();
 
+      // ✅ Better Auth retourne différemment
+      // Si erreur, res.ok sera false
       if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+
         let errorMessage = "";
         switch (res.status) {
           case 400:
-            errorMessage = data.message || "Mot de passe actuel incorrect";
+            errorMessage =
+              data.error || data.message || "Mot de passe actuel incorrect";
             break;
           case 401:
             errorMessage = "Session expirée. Veuillez vous reconnecter";
             setTimeout(() => router.push("/login"), 2000);
             break;
-          case 423:
-            errorMessage = data.message || "Compte temporairement verrouillé";
-            break;
           case 429:
             errorMessage = "Trop de tentatives. Réessayez plus tard.";
             break;
           default:
-            errorMessage = data.message || "Erreur lors de la mise à jour";
+            errorMessage =
+              data.error || data.message || "Erreur lors de la mise à jour";
         }
 
-        // Monitoring pour erreurs HTTP - Critique si session expirée
         const httpError = new Error(`HTTP ${res.status}: ${errorMessage}`);
         const isCritical = res.status === 401;
         console.error(httpError, "AuthContext", "updatePassword", isCritical);
@@ -229,15 +230,14 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
-      if (data.success) {
-        toast.success("Mot de passe mis à jour avec succès!");
+      // ✅ Succès
+      toast.success("Mot de passe mis à jour avec succès!");
 
-        // Redirection après mise à jour
-        setTimeout(() => {
-          router.push("/me");
-          router.refresh(); // Force le rafraîchissement
-        }, 1000);
-      }
+      // Redirection après mise à jour
+      setTimeout(() => {
+        router.push("/me");
+        router.refresh(); // Force le rafraîchissement
+      }, 1000);
     } catch (error) {
       if (error.name === "AbortError") {
         setError("La requête a pris trop de temps");

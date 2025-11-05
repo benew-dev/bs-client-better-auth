@@ -209,7 +209,7 @@ const UpdateProfile = ({ initialEmail }) => {
 
       // ✅ REFETCH LA SESSION - SOLUTION OFFICIELLE BETTER AUTH
       console.log("🔄 Refreshing session...");
-      refetch();
+      await refetch();
       console.log("✅ Session refreshed!");
 
       toast.success("Profil mis à jour avec succès!");
