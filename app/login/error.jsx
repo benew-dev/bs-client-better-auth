@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { captureException } from "@/monitoring/sentry";
 import { getErrorDisplayInfo } from "@/monitoring/errorUtils";
 import Link from "next/link";
-import { signOut } from "next-auth/react";
+import { signOut } from "@/lib/auth-client";
 
 /**
  * Gestionnaire d'erreurs spécifique à la page de connexion
