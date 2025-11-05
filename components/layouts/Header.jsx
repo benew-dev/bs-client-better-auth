@@ -59,8 +59,7 @@ const UserDropdown = memo(({ user }) => {
 
   return (
     <div className="relative group">
-      <Link
-        href="/me"
+      <div
         className="flex items-center space-x-2 px-3 py-2 rounded-md transition-colors hover:bg-blue-50"
         aria-expanded="false"
         aria-haspopup="true"
@@ -91,7 +90,7 @@ const UserDropdown = memo(({ user }) => {
             {user?.email}
           </p>
         </div>
-      </Link>
+      </div>
 
       <div
         role="menu"
