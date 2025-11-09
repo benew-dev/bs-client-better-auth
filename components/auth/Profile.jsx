@@ -128,7 +128,9 @@ const Profile = () => {
 
             {/* Nom dans l'espace bleu */}
             <div className="flex-1 pl-4">
-              <h2 className="text-2xl font-bold text-white">{userData.name}</h2>
+              <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white">
+                {userData.name}
+              </h2>
             </div>
 
             {/* Menu actions */}
