@@ -120,40 +120,19 @@ const Profile = () => {
       {/* Card principale du profil */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         {/* Header avec avatar et actions */}
-        <div className="relative bg-gradient-to-r from-blue-500 to-blue-600 h-24"></div>
+        <div className="relative bg-gradient-to-r from-blue-500 to-blue-600 h-24 px-6">
+          {/* Conteneur flex pour tout le contenu */}
+          <div className="flex items-end justify-between h-full pb-2">
+            {/* Section vide pour l'alignement (la photo sera en dessous) */}
+            <div className="w-24"></div>
 
-        <div className="relative px-6 pb-6">
-          {/* Conteneur flex pour Avatar + Nom + Menu */}
-          <div className="flex items-end justify-between -mt-12">
-            {/* Section Avatar + Nom */}
-            <div className="flex items-end space-x-4">
-              {/* Photo de profil */}
-              <div className="relative">
-                <div className="relative w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white">
-                  <Image
-                    key={`profile-avatar-${userData.avatarUrl}`}
-                    className="object-cover"
-                    src={userData.avatarUrl}
-                    alt={`${userData.name}'s profile picture`}
-                    fill
-                    sizes="96px"
-                    priority
-                    onError={() => setImageError(true)}
-                    quality={75}
-                  />
-                </div>
-              </div>
-
-              {/* Nom dans l'espace bleu */}
-              <div className="pb-2">
-                <h2 className="text-2xl font-bold text-white">
-                  {userData.name}
-                </h2>
-              </div>
+            {/* Nom dans l'espace bleu */}
+            <div className="flex-1 pl-4">
+              <h2 className="text-2xl font-bold text-white">{userData.name}</h2>
             </div>
 
             {/* Menu actions */}
-            <div className="relative pb-2">
+            <div className="relative">
               <button
                 onClick={toggleModal}
                 className="dots-button p-2 text-white hover:bg-blue-700 rounded-full transition-colors"
@@ -194,6 +173,25 @@ const Profile = () => {
                   </Link>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+
+        <div className="relative px-6 pb-6">
+          {/* Photo de profil - Seule, débordant */}
+          <div className="-mt-12">
+            <div className="relative w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white">
+              <Image
+                key={`profile-avatar-${userData.avatarUrl}`}
+                className="object-cover"
+                src={userData.avatarUrl}
+                alt={`${userData.name}'s profile picture`}
+                fill
+                sizes="96px"
+                priority
+                onError={() => setImageError(true)}
+                quality={75}
+              />
             </div>
           </div>
 
