@@ -132,15 +132,15 @@ const Profile = () => {
             </div>
 
             {/* Menu actions */}
-            <div className="relative">
+            <div className="relative z-10">
               <button
                 onClick={toggleModal}
-                className="dots-button p-2 text-white hover:bg-blue-700 rounded-full transition-colors"
+                className="dots-button p-2 text-white hover:bg-blue-700 rounded-full transition-colors cursor-pointer"
                 aria-label="Plus d'options"
                 aria-expanded={isModalOpen}
                 aria-haspopup="true"
               >
-                <EllipsisVertical className="w-5 h-5 cursor-pointer" />
+                <EllipsisVertical className="w-5 h-5" />
               </button>
 
               {isModalOpen && (
