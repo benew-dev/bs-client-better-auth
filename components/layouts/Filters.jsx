@@ -1,10 +1,19 @@
 "use client";
 
 import { useState, useCallback, useMemo, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-toastify";
 import { getPriceQueryParams, isArrayEmpty } from "@/helpers/helpers";
 import { ChevronDown, ChevronUp } from "lucide-react";
+
+// ✅ Ajouter l'import dynamique de Search
+const Search = dynamic(() => import("./Search"), {
+  loading: () => (
+    <div className="h-10 w-full bg-gray-100 animate-pulse rounded-md"></div>
+  ),
+  ssr: true,
+});
 
 const Filters = ({ categories, setLocalLoading }) => {
   const router = useRouter();
@@ -19,7 +28,7 @@ const Filters = ({ categories, setLocalLoading }) => {
   // Mémoiser la valeur de catégorie actuelle
   const currentCategory = useMemo(
     () => searchParams?.get("category") || "",
-    [searchParams]
+    [searchParams],
   );
 
   // Synchroniser les états avec les paramètres d'URL
@@ -32,7 +41,7 @@ const Filters = ({ categories, setLocalLoading }) => {
   const validatePrices = useCallback(async () => {
     if (min === "" && max === "") {
       throw new Error(
-        "Veuillez renseigner au moins un des deux champs de prix"
+        "Veuillez renseigner au moins un des deux champs de prix",
       );
     }
 
@@ -82,7 +91,7 @@ const Filters = ({ categories, setLocalLoading }) => {
         setIsSubmitting(false);
       }
     },
-    [searchParams]
+    [searchParams],
   );
 
   // Gestionnaire pour appliquer les filtres de prix
@@ -110,7 +119,7 @@ const Filters = ({ categories, setLocalLoading }) => {
       router.push(path);
     } catch (error) {
       toast.error(
-        error.message || "Une erreur est survenue avec les filtres de prix"
+        error.message || "Une erreur est survenue avec les filtres de prix",
       );
       setLocalLoading(false);
       setIsSubmitting(false);
@@ -169,6 +178,10 @@ const Filters = ({ categories, setLocalLoading }) => {
           id="filter-panel"
           className={`${open ? "block" : "hidden"} md:block space-y-4`}
         >
+          {/* ✅ NOUVEAU : Barre de recherche mobile uniquement */}
+          <div className="md:hidden mb-4">
+            <Search setLoading={setLocalLoading} />
+          </div>
           {/* Prix */}
           <div className="p-4 border border-gray-200 bg-white rounded-lg shadow-sm">
             <h3 className="font-semibold mb-3 text-gray-700">Prix (Fdj)</h3>

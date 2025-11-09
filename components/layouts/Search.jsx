@@ -41,7 +41,11 @@ const Search = ({ setLoading }) => {
       // Éviter les soumissions multiples
       if (isSubmitting) return;
       setIsSubmitting(true);
-      setLoading(true);
+
+      // ✅ Appeler setLoading si la prop existe
+      if (setLoading) {
+        setLoading(true);
+      }
 
       try {
         // Vérification simple avant validation
@@ -74,7 +78,7 @@ const Search = ({ setLoading }) => {
         setIsSubmitting(false);
       }
     },
-    [keyword],
+    [keyword, setLoading],
   );
 
   // Soumettre sur appui de la touche Entrée avec debounce

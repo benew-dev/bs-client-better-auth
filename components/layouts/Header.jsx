@@ -337,9 +337,6 @@ const Header = () => {
             aria-modal="true"
             aria-label="Menu principal"
           >
-            <div className="mb-4">
-              <Search />
-            </div>
             {user ? (
               <div className="space-y-3">
                 {/* Mon profil réapparaît */}
