@@ -94,7 +94,7 @@ const UpdateProfileBasic = () => {
       });
 
       // ✅ Refetch la session
-      refetch();
+      await refetch();
 
       toast.success("Profil mis à jour avec succès!");
 

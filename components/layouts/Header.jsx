@@ -71,11 +71,7 @@ const UserDropdown = memo(({ user }) => {
             key={`avatar-${user?.image}`} // ✅ Key unique
             data-testid="profile image"
             alt={`Photo de profil de ${user?.name || "utilisateur"}`}
-            src={
-              user?.avatar?.url !== null
-                ? user?.avatar?.url
-                : "/images/default.png"
-            }
+            src={user?.image !== null ? user?.image : "/images/default.png"}
             fill
             sizes="32px"
             className="object-cover"
@@ -282,9 +278,7 @@ const Header = () => {
                     key={`mobile-avatar-${user?.image}`}
                     alt={`Photo de profil de ${user?.name || "utilisateur"}`}
                     src={
-                      user?.avatar?.url !== null
-                        ? user?.avatar?.url
-                        : "/images/default.png"
+                      user?.image !== null ? user?.image : "/images/default.png"
                     }
                     fill
                     sizes="40px"
