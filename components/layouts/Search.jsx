@@ -43,8 +43,8 @@ const Search = ({ setLoading }) => {
       if (isSubmitting) return;
       setIsSubmitting(true);
 
-      // ✅ Appeler setLoading si la prop existe
-      if (setLoading) {
+      // ✅ MODIFIÉ : Appeler setLoading UNIQUEMENT si la fonction existe
+      if (setLoading && typeof setLoading === "function") {
         setLoading(true);
       }
 
@@ -52,12 +52,18 @@ const Search = ({ setLoading }) => {
         // Vérification simple avant validation
         if (!keyword || keyword.trim() === "") {
           toast.error("Veuillez entrer un terme de recherche");
-          setLoading(false);
+          // ✅ MODIFIÉ : Vérifier avant d'appeler
+          if (setLoading && typeof setLoading === "function") {
+            setLoading(false);
+          }
           setIsSubmitting(false);
           return;
         }
 
-        setLoading(false);
+        // ✅ MODIFIÉ : Vérifier avant d'appeler
+        if (setLoading && typeof setLoading === "function") {
+          setLoading(false);
+        }
         setIsSubmitting(false);
         // Navigation vers la page de résultats
         router.push(`/?keyword=${encodeURIComponent(keyword.trim())}`);
@@ -75,7 +81,10 @@ const Search = ({ setLoading }) => {
           );
         }
 
-        setLoading(false);
+        // ✅ MODIFIÉ : Vérifier avant d'appeler
+        if (setLoading && typeof setLoading === "function") {
+          setLoading(false);
+        }
         setIsSubmitting(false);
       }
     },
