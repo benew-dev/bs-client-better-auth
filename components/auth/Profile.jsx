@@ -127,8 +127,8 @@ const Profile = () => {
             <div className="w-24"></div>
 
             {/* Nom dans l'espace bleu */}
-            <div className="flex-1 pl-4">
-              <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white">
+            <div className="flex-1 pl-4 min-w-0">
+              <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white truncate">
                 {userData.name}
               </h2>
             </div>
