@@ -119,42 +119,31 @@ const Profile = () => {
     <div className="space-y-6">
       {/* Card principale du profil */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        {/* Header avec avatar et actions */}
-        <div className="relative bg-gradient-to-r from-blue-500 to-blue-600 h-24"></div>
+        {/* Header avec avatar, nom et actions */}
+        <div className="relative bg-gradient-to-r from-blue-500 to-blue-600 h-32 px-6">
+          {/* Nom de l'utilisateur - Dans l'espace bleu */}
+          <div className="pt-6">
+            <h2 className="text-2xl font-bold text-white">{userData.name}</h2>
+          </div>
+        </div>
 
         <div className="relative px-6 pb-6">
           {/* Avatar */}
           <div className="flex items-start justify-between -mt-12">
-            {/* Section Avatar + Nom */}
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <div className="relative w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white">
-                  <Image
-                    key={`profile-avatar-${userData.avatarUrl}`}
-                    className="object-cover"
-                    src={userData.avatarUrl}
-                    alt={`${userData.name}'s profile picture`}
-                    fill
-                    sizes="96px"
-                    priority
-                    onError={() => setImageError(true)}
-                    quality={75}
-                  />
-                </div>
-              </div>
-
-              {/* Nom de l'utilisateur */}
-              <div className="mt-8">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  {userData.name}
-                </h2>
-                <p className="text-sm text-gray-500 mt-1">
-                  Membre depuis{" "}
-                  {new Date(user?.createdAt || Date.now()).toLocaleDateString(
-                    "fr-FR",
-                    { year: "numeric", month: "long" },
-                  )}
-                </p>
+            {/* Photo de profil */}
+            <div className="relative">
+              <div className="relative w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white">
+                <Image
+                  key={`profile-avatar-${userData.avatarUrl}`}
+                  className="object-cover"
+                  src={userData.avatarUrl}
+                  alt={`${userData.name}'s profile picture`}
+                  fill
+                  sizes="96px"
+                  priority
+                  onError={() => setImageError(true)}
+                  quality={75}
+                />
               </div>
             </div>
 
