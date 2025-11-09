@@ -125,19 +125,36 @@ const Profile = () => {
         <div className="relative px-6 pb-6">
           {/* Avatar */}
           <div className="flex items-start justify-between -mt-12">
-            <div className="relative">
-              <div className="relative w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white">
-                <Image
-                  key={`profile-avatar-${userData.avatarUrl}`} // ✅ Key unique
-                  className="object-cover"
-                  src={userData.avatarUrl}
-                  alt={`${userData.name}'s profile picture`}
-                  fill
-                  sizes="96px"
-                  priority
-                  onError={() => setImageError(true)}
-                  quality={75}
-                />
+            {/* Section Avatar + Nom */}
+            <div className="flex items-center space-x-4">
+              <div className="relative">
+                <div className="relative w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white">
+                  <Image
+                    key={`profile-avatar-${userData.avatarUrl}`}
+                    className="object-cover"
+                    src={userData.avatarUrl}
+                    alt={`${userData.name}'s profile picture`}
+                    fill
+                    sizes="96px"
+                    priority
+                    onError={() => setImageError(true)}
+                    quality={75}
+                  />
+                </div>
+              </div>
+
+              {/* Nom de l'utilisateur */}
+              <div className="mt-8">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {userData.name}
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  Membre depuis{" "}
+                  {new Date(user?.createdAt || Date.now()).toLocaleDateString(
+                    "fr-FR",
+                    { year: "numeric", month: "long" },
+                  )}
+                </p>
               </div>
             </div>
 

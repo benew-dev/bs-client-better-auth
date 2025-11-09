@@ -27,16 +27,13 @@ export default async function UserLayout({ children }) {
     return redirect(`/login?callbackUrl=${callbackPath}`);
   }
 
-  // Safe access to user name
-  const userName = user?.name || "User Profile";
-
   return (
     <>
       {/* User profile header section */}
       <section className="flex flex-row py-3 sm:py-7 bg-blue-100 print:hidden">
         <div className="container max-w-[var(--breakpoint-xl)] mx-auto px-4">
           <h2 className="font-medium text-2xl text-slate-800">
-            {userName.toUpperCase()}
+            ESPACE PERSONNEL
           </h2>
         </div>
       </section>
