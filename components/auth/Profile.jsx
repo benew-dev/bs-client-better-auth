@@ -106,7 +106,7 @@ const Profile = () => {
     phone: user?.phone || "Aucun téléphone",
     avatarUrl: imageError
       ? "/images/default.png"
-      : user?.avatar?.url || "/images/default.png",
+      : user?.image || "/images/default.png",
     address: user?.address || null,
   };
 

@@ -68,7 +68,7 @@ const UserDropdown = memo(({ user }) => {
       >
         <div className="relative w-8 h-8 rounded-full overflow-hidden border border-gray-200">
           <Image
-            key={`avatar-${user?.avatar?.url}`} // ✅ Key unique
+            key={`avatar-${user?.image}`} // ✅ Key unique
             data-testid="profile image"
             alt={`Photo de profil de ${user?.name || "utilisateur"}`}
             src={
@@ -279,7 +279,7 @@ const Header = () => {
                   aria-controls="mobile-menu"
                 >
                   <Image
-                    key={`mobile-avatar-${user?.avatar?.url}`}
+                    key={`mobile-avatar-${user?.image}`}
                     alt={`Photo de profil de ${user?.name || "utilisateur"}`}
                     src={
                       user?.avatar?.url !== null

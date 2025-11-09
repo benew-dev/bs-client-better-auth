@@ -12,28 +12,29 @@ import {
 
 const baseFields = createBaseFields();
 
-// Schéma de profil utilisateur AVEC adresse
-export const profileSchema = yup.object().shape({
+// ========================================
+// 1. SCHÉMA POUR NOM + IMAGE (Better Auth)
+// ========================================
+export const profileBasicSchema = yup.object().shape({
   name: baseFields.name,
-  phone: baseFields.phone,
-  avatar: yup
-    .object()
+  image: yup
+    .string()
     .nullable()
-    .shape({
-      public_id: yup.string().nullable(),
-      url: yup
-        .string()
-        .nullable()
-        .url("URL invalide")
-        .test(
-          "https",
-          "URL non sécurisée",
-          (value) => !value || value.startsWith("https://"),
-        ),
-    })
+    .url("URL d'image invalide")
+    .test(
+      "https",
+      "URL non sécurisée",
+      (value) => !value || value.startsWith("https://"),
+    )
     .default(null),
+});
 
-  // NOUVEAU: Schéma d'adresse intégré
+// ========================================
+// 2. SCHÉMA POUR PHONE + ADRESSE (API Custom)
+// ========================================
+export const profileContactSchema = yup.object().shape({
+  phone: baseFields.phone,
+
   address: yup
     .object()
     .nullable()
@@ -66,16 +67,63 @@ export const profileSchema = yup.object().shape({
     .default(null),
 });
 
-// Schéma de vérification d'email (inchangé)
-export const emailVerificationSchema = yup.object().shape({
-  token: yup
+// ========================================
+// 3. SCHÉMA LEGACY (pour compatibilité si besoin)
+// ========================================
+export const profileSchema = yup.object().shape({
+  name: baseFields.name,
+  phone: baseFields.phone,
+
+  // ✅ CHANGEMENT: avatar devient image (URL simple)
+  image: yup
     .string()
-    .required("Token requis")
-    .matches(/^[a-zA-Z0-9]{32,128}$/, "Token invalide"),
+    .nullable()
+    .url("URL d'image invalide")
+    .test(
+      "https",
+      "URL non sécurisée",
+      (value) => !value || value.startsWith("https://"),
+    )
+    .default(null),
+
+  address: yup
+    .object()
+    .nullable()
+    .shape({
+      street: yup
+        .string()
+        .nullable()
+        .transform((value) => (value ? sanitizeString(value) : null))
+        .min(3, "Minimum 3 caractères")
+        .max(100, "Maximum 100 caractères")
+        .matches(/^[a-zA-Z0-9\s,.'°-]+$/, "Caractères non autorisés")
+        .test("no-nosql", "Format invalide", noNoSqlInjection),
+
+      city: yup
+        .string()
+        .nullable()
+        .transform((value) => (value ? sanitizeString(value) : null))
+        .min(2, "Minimum 2 caractères")
+        .max(50, "Maximum 50 caractères")
+        .matches(/^[a-zA-Z\s'\-\u00C0-\u017F]+$/, "Caractères non autorisés"),
+
+      country: yup
+        .string()
+        .nullable()
+        .transform((value) => (value ? sanitizeString(value) : null))
+        .min(2, "Minimum 2 caractères")
+        .max(50, "Maximum 50 caractères")
+        .matches(/^[a-zA-Z\s'\-\u00C0-\u017F]+$/, "Caractères non autorisés"),
+    })
+    .default(null),
 });
 
-// Fonctions de validation
+// ========================================
+// FONCTIONS DE VALIDATION
+// ========================================
 export const validateProfile = (data) => validate(profileSchema, data);
+export const validateProfileBasic = (data) =>
+  validate(profileBasicSchema, data);
+export const validateProfileContact = (data) =>
+  validate(profileContactSchema, data);
 export const validateProfileWithLogging = validateProfile;
-export const validateEmailVerification = (data) =>
-  validate(emailVerificationSchema, data);

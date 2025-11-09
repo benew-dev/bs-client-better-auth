@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
-import { validateProfile } from "@/helpers/validation/schemas/user";
+import { validateProfileContact } from "@/helpers/validation/schemas/user";
 import { captureException } from "@/monitoring/sentry";
 import { withIntelligentRateLimit } from "@/utils/rateLimit";
 import { getAuth } from "@/lib/auth";
@@ -52,8 +52,9 @@ export const PUT = withIntelligentRateLimit(
         );
       }
 
-      // 4. Validation avec Yup (inclut l'adresse)
-      const validation = await validateProfile(profileData);
+      // 4. Validation avec Yup (UNIQUEMENT phone + adresse)
+      const validation = await validateProfileContact(profileData);
+
       if (!validation.isValid) {
         return NextResponse.json(
           {
@@ -66,7 +67,7 @@ export const PUT = withIntelligentRateLimit(
       }
 
       // 5. Préparer les données à mettre à jour
-      const allowedFields = ["name", "phone", "avatar", "address"];
+      const allowedFields = ["phone", "address"];
       const updateData = {};
 
       allowedFields.forEach((field) => {

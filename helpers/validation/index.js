@@ -31,8 +31,12 @@ export {
 // Export des schémas utilisateur
 export {
   profileSchema,
+  profileBasicSchema, // ✅ NOUVEAU
+  profileContactSchema, // ✅ NOUVEAU
   emailVerificationSchema,
   validateProfile,
+  validateProfileBasic, // ✅ NOUVEAU
+  validateProfileContact, // ✅ NOUVEAU
   validateProfileWithLogging,
   validateEmailVerification,
 } from "./schemas/user";

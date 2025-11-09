@@ -17,24 +17,14 @@ export const AuthProvider = ({ children }) => {
   /**
    * Met à jour le profil utilisateur via l'API qui utilise Better Auth
    */
-  const updateProfile = async ({ name, phone, avatar, address }) => {
+  const updateProfile = async ({ phone, address }) => {
     try {
       setLoading(true);
       setError(null);
 
-      // Validation basique côté client
-      if (!name || name.trim() === "") {
-        console.log("Le nom est obligatoire");
-        setError("Le nom est obligatoire");
-        setLoading(false);
-        return;
-      }
-
-      // Préparer les données à envoyer
+      // Préparer les données à envoyer (SANS nom et SANS image)
       const payload = {
-        name: name.trim(),
-        phone: phone ? phone.trim() : "",
-        avatar,
+        phone: phone.trim(),
         address,
       };
 
