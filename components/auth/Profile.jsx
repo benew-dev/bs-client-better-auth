@@ -120,14 +120,14 @@ const Profile = () => {
       {/* Card principale du profil */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         {/* Header avec avatar et actions */}
-        <div className="relative bg-gradient-to-r from-blue-500 to-blue-600 h-24 px-6">
+        <div className="relative bg-gradient-to-r from-blue-500 to-blue-600 h-24 px-2 sm:px-4 md:px-6">
           {/* Conteneur flex pour tout le contenu */}
           <div className="flex items-end justify-between h-full pb-2">
             {/* Section vide pour l'alignement (la photo sera en dessous) */}
-            <div className="w-24"></div>
+            <div className="w-20 sm:w-22 md:w-24"></div>
 
             {/* Nom dans l'espace bleu */}
-            <div className="flex-1 pl-4 min-w-0">
+            <div className="flex-1 pl-1 sm:pl-2 md:pl-3 lg:pl-4 min-w-0">
               <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white truncate">
                 {userData.name}
               </h2>
@@ -137,12 +137,12 @@ const Profile = () => {
             <div className="relative z-10">
               <button
                 onClick={toggleModal}
-                className="dots-button p-2 text-white hover:bg-blue-700 rounded-full transition-colors cursor-pointer"
+                className="dots-button p-1.5 sm:p-2 text-white hover:bg-blue-700 rounded-full transition-colors cursor-pointer"
                 aria-label="Plus d'options"
                 aria-expanded={isModalOpen}
                 aria-haspopup="true"
               >
-                <EllipsisVertical className="w-5 h-5" />
+                <EllipsisVertical className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
 
               {isModalOpen && (
@@ -179,17 +179,17 @@ const Profile = () => {
           </div>
         </div>
 
-        <div className="relative px-6 pb-6">
-          {/* Photo de profil - Seule, débordant */}
-          <div className="-mt-12">
-            <div className="relative w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white">
+        <div className="relative px-2 sm:px-4 md:px-6 pb-6">
+          {/* Photo de profil - Taille responsive */}
+          <div className="-mt-10 sm:-mt-11 md:-mt-12 relative z-0">
+            <div className="relative w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white">
               <Image
                 key={`profile-avatar-${userData.avatarUrl}`}
                 className="object-cover"
                 src={userData.avatarUrl}
                 alt={`${userData.name}'s profile picture`}
                 fill
-                sizes="96px"
+                sizes="(max-width: 640px) 80px, (max-width: 768px) 88px, 96px"
                 priority
                 onError={() => setImageError(true)}
                 quality={75}
