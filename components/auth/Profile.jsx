@@ -119,47 +119,49 @@ const Profile = () => {
     <div className="space-y-6">
       {/* Card principale du profil */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        {/* Header avec avatar, nom et actions */}
-        <div className="relative bg-gradient-to-r from-blue-500 to-blue-600 h-32 px-6">
-          {/* Nom de l'utilisateur - Dans l'espace bleu */}
-          <div className="pt-6">
-            <h2 className="text-2xl font-bold text-white">{userData.name}</h2>
-          </div>
-        </div>
+        {/* Header avec avatar et actions */}
+        <div className="relative bg-gradient-to-r from-blue-500 to-blue-600 h-24"></div>
 
         <div className="relative px-6 pb-6">
-          {/* Avatar */}
-          <div className="flex items-start justify-between -mt-12">
-            {/* Photo de profil */}
-            <div className="relative">
-              <div className="relative w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white">
-                <Image
-                  key={`profile-avatar-${userData.avatarUrl}`}
-                  className="object-cover"
-                  src={userData.avatarUrl}
-                  alt={`${userData.name}'s profile picture`}
-                  fill
-                  sizes="96px"
-                  priority
-                  onError={() => setImageError(true)}
-                  quality={75}
-                />
+          {/* Conteneur flex pour Avatar + Nom + Menu */}
+          <div className="flex items-end justify-between -mt-12">
+            {/* Section Avatar + Nom */}
+            <div className="flex items-end space-x-4">
+              {/* Photo de profil */}
+              <div className="relative">
+                <div className="relative w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white">
+                  <Image
+                    key={`profile-avatar-${userData.avatarUrl}`}
+                    className="object-cover"
+                    src={userData.avatarUrl}
+                    alt={`${userData.name}'s profile picture`}
+                    fill
+                    sizes="96px"
+                    priority
+                    onError={() => setImageError(true)}
+                    quality={75}
+                  />
+                </div>
+              </div>
+
+              {/* Nom dans l'espace bleu */}
+              <div className="pb-2">
+                <h2 className="text-2xl font-bold text-white">
+                  {userData.name}
+                </h2>
               </div>
             </div>
 
             {/* Menu actions */}
-            <div className="relative mt-4">
+            <div className="relative pb-2">
               <button
                 onClick={toggleModal}
-                className="dots-button p-2 text-gray-600 hover:text-gray-900 rounded-full transition-colors"
+                className="dots-button p-2 text-white hover:bg-blue-700 rounded-full transition-colors"
                 aria-label="Plus d'options"
                 aria-expanded={isModalOpen}
                 aria-haspopup="true"
               >
-                <EllipsisVertical
-                  className="w-5 h-5 cursor-pointer"
-                  color="#ffffff"
-                />
+                <EllipsisVertical className="w-5 h-5 cursor-pointer" />
               </button>
 
               {isModalOpen && (
