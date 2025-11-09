@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useCallback, useMemo, useEffect } from "react";
-import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-toastify";
 import { getPriceQueryParams, isArrayEmpty } from "@/helpers/helpers";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import dynamic from "next/dynamic";
 
-// ✅ Ajouter l'import dynamique de Search
 const Search = dynamic(() => import("./Search"), {
   loading: () => (
     <div className="h-10 w-full bg-gray-100 animate-pulse rounded-md"></div>
@@ -28,6 +27,12 @@ const Filters = ({ categories, setLocalLoading }) => {
   // Mémoiser la valeur de catégorie actuelle
   const currentCategory = useMemo(
     () => searchParams?.get("category") || "",
+    [searchParams],
+  );
+
+  // ✅ NOUVEAU : Mémoriser le keyword pour le reset
+  const currentKeyword = useMemo(
+    () => searchParams?.get("keyword") || "",
     [searchParams],
   );
 
@@ -68,17 +73,14 @@ const Filters = ({ categories, setLocalLoading }) => {
       setLocalLoading(true);
 
       try {
-        // Création d'une nouvelle instance de URLSearchParams
         const params = new URLSearchParams(searchParams?.toString() || "");
 
-        // Logique de basculement: si la catégorie est déjà sélectionnée, la désélectionner
         if (params.get("category") === categoryId) {
           params.delete("category");
         } else {
           params.set("category", categoryId);
         }
 
-        // Navigation vers la nouvelle URL
         const path = `/?${params.toString()}`;
         setOpen(false);
         setIsSubmitting(false);
@@ -91,7 +93,7 @@ const Filters = ({ categories, setLocalLoading }) => {
         setIsSubmitting(false);
       }
     },
-    [searchParams],
+    [searchParams, router, setLocalLoading],
   );
 
   // Gestionnaire pour appliquer les filtres de prix
@@ -101,17 +103,13 @@ const Filters = ({ categories, setLocalLoading }) => {
     setLocalLoading(true);
 
     try {
-      // Validation des prix
       await validatePrices();
 
-      // Création des paramètres d'URL
       let params = new URLSearchParams(searchParams?.toString() || "");
 
-      // Par celles-ci:
       params = getPriceQueryParams(params, "min", min);
       params = getPriceQueryParams(params, "max", max);
 
-      // Navigation
       const path = `/?${params.toString()}`;
       setOpen(false);
       setIsSubmitting(false);
@@ -124,9 +122,9 @@ const Filters = ({ categories, setLocalLoading }) => {
       setLocalLoading(false);
       setIsSubmitting(false);
     }
-  }, [min, max, searchParams]);
+  }, [min, max, searchParams, validatePrices, router, setLocalLoading]);
 
-  // Réinitialiser les filtres
+  // ✅ MODIFIÉ : Réinitialiser aussi le keyword
   const resetFilters = useCallback(() => {
     setIsSubmitting(false);
     setLocalLoading(false);
@@ -134,12 +132,31 @@ const Filters = ({ categories, setLocalLoading }) => {
     setMax("");
     router.push("/");
     setOpen(false);
+  }, [router, setLocalLoading]);
+
+  // ✅ MODIFIÉ : Inclure keyword dans les filtres actifs
+  const hasActiveFilters = useMemo(() => {
+    return min || max || currentCategory || currentKeyword;
+  }, [min, max, currentCategory, currentKeyword]);
+
+  // ✅ NOUVEAU : Fonction pour gérer la fermeture après recherche (mobile uniquement)
+  const handleSearchComplete = useCallback(() => {
+    // Fermer le panneau uniquement sur mobile
+    if (window.innerWidth < 768) {
+      setOpen(false);
+    }
   }, []);
 
-  // Vérifier si des filtres sont actifs
-  const hasActiveFilters = useMemo(() => {
-    return min || max || currentCategory;
-  }, [min, max, currentCategory]);
+  // ✅ NOUVEAU : Wrapper pour setLocalLoading qui ferme aussi le panneau
+  const handleSearchLoading = useCallback(
+    (loading) => {
+      setLocalLoading(loading);
+      if (!loading) {
+        handleSearchComplete();
+      }
+    },
+    [setLocalLoading, handleSearchComplete],
+  );
 
   return (
     <aside className="md:w-1/3 lg:w-1/4 px-4">
@@ -178,10 +195,11 @@ const Filters = ({ categories, setLocalLoading }) => {
           id="filter-panel"
           className={`${open ? "block" : "hidden"} md:block space-y-4`}
         >
-          {/* ✅ NOUVEAU : Barre de recherche mobile uniquement */}
+          {/* ✅ MODIFIÉ : Passer le wrapper au lieu de setLocalLoading directement */}
           <div className="md:hidden mb-4">
-            <Search setLoading={setLocalLoading} />
+            <Search setLoading={handleSearchLoading} />
           </div>
+
           {/* Prix */}
           <div className="p-4 border border-gray-200 bg-white rounded-lg shadow-sm">
             <h3 className="font-semibold mb-3 text-gray-700">Prix (Fdj)</h3>

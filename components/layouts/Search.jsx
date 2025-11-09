@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
+import { Search as SearchIcon } from "lucide-react"; // ✅ Ajouter cet import
 
 // Fonction de debounce pour limiter les requêtes
 const useDebounce = (fn, delay) => {
@@ -124,11 +125,17 @@ const Search = ({ setLoading }) => {
             ? "bg-blue-400 cursor-not-allowed"
             : "bg-blue-600 hover:bg-blue-700"
         } text-white rounded-md transition-colors`}
-        onClick={debouncedSubmit} // Utiliser debouncedSubmit ici
+        onClick={debouncedSubmit}
         disabled={isSubmitting}
         aria-label="Lancer la recherche"
       >
-        {isSubmitting ? "Recherche..." : "Rechercher"}
+        {/* ✅ Afficher l'icône sur mobile, le texte sur desktop */}
+        <span className="md:hidden">
+          <SearchIcon className="w-5 h-5" />
+        </span>
+        <span className="hidden md:inline">
+          {isSubmitting ? "Recherche..." : "Rechercher"}
+        </span>
       </button>
     </form>
   );
