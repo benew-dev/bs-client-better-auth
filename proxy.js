@@ -27,7 +27,7 @@ const PUBLIC_PATHS = [
 
 const pathCache = new Map();
 
-export async function middleware(req) {
+export async function proxy(req) {
   const path = req.nextUrl.pathname;
 
   if (!IS_PRODUCTION && DEBUG) {
@@ -99,8 +99,7 @@ export async function middleware(req) {
 }
 
 export const config = {
-  runtime: "nodejs", // ✅ Requis pour Next.js 15.2.0+
   matcher: [
     "/((?!api/auth|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|images|fonts|public).*)",
-  ],
+  ]
 };
