@@ -329,7 +329,7 @@ export const POST = withCartRateLimit(
         { status: isNewItem ? 201 : 200 },
       );
     } catch (error) {
-      console.error("Cart POST error:", error.message);
+      console.error("Cart POST error:", error.message, error.stack);
 
       if (error.code !== 11000 && !error.message?.includes("authentication")) {
         captureException(error, {
