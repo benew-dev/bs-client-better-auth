@@ -1,3 +1,5 @@
+// utils/rateLimit.js
+
 /**
  * Rate Limiter Intelligent avec stratégies différenciées
  * Optimisé pour e-commerce avec ~500 visiteurs/jour

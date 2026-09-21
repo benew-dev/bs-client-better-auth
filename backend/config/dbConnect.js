@@ -1,3 +1,5 @@
+// backend/config/dbConnect.js
+
 import mongoose from "mongoose";
 import { captureException, captureMessage } from "@/monitoring/sentry";
 import { isValidMongoURI } from "../utils/validation";

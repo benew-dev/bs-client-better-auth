@@ -360,27 +360,27 @@ export const POST = withCartRateLimit(
   },
   {
     action: "add", // 100 req/min, pas de blocage
-    extractUserInfo: async (req) => {
-      // Extraire user + session pour tracking optimal
-      try {
-        const session = await getSessionFromRequest(req);
-        const sessionId =
-          req.headers.get("x-session-id") ||
-          req.cookies?.get("session_id")?.value;
+    // extractUserInfo: async (req) => {
+    //   // Extraire user + session pour tracking optimal
+    //   try {
+    //     const session = await getSessionFromRequest(req);
+    //     const sessionId =
+    //       req.headers.get("x-session-id") ||
+    //       req.cookies?.get("session_id")?.value;
 
-        return {
-          userId: session?.user?.id,
-          email: session?.user?.email,
-          sessionId,
-        };
-      } catch {
-        return {
-          sessionId:
-            req.headers.get("x-session-id") ||
-            req.cookies?.get("session_id")?.value,
-        };
-      }
-    },
+    //     return {
+    //       userId: session?.user?.id,
+    //       email: session?.user?.email,
+    //       sessionId,
+    //     };
+    //   } catch {
+    //     return {
+    //       sessionId:
+    //         req.headers.get("x-session-id") ||
+    //         req.cookies?.get("session_id")?.value,
+    //     };
+    //   }
+    // },
   },
 );
 
