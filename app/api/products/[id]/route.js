@@ -25,7 +25,7 @@ export const GET = withIntelligentRateLimit(
   async function (req, { params }) {
     try {
       // Validation simple de l'ID MongoDB
-      const { id } = params;
+      const { id } = await params;
       if (!id || !/^[0-9a-fA-F]{24}$/.test(id)) {
         return NextResponse.json(
           {
