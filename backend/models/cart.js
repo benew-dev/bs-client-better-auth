@@ -80,30 +80,22 @@ cartSchema.pre("save", async function (next) {
   if (this.isNew || this.isModified("quantity")) {
     // Vous pourriez vérifier ici si le stock est suffisant
     // Ce code dépend de votre modèle Product
-    try {
-      const Product = mongoose.model("Product");
-      const product = await Product.findById(this.product);
+    const Product = mongoose.model("Product");
+    const product = await Product.findById(this.product);
 
-      if (!product) {
-        return next(new Error("Produit non trouvé"));
-      }
+    if (!product) {
+      throw new Error("Produit non trouvé");
+    }
 
-      if (product.stock < this.quantity) {
-        return next(
-          new Error(`Stock insuffisant. Disponible: ${product.stock}`),
-        );
-      }
-    } catch (error) {
-      return next(error);
+    if (product.stock < this.quantity) {
+      throw new Error(`Stock insuffisant. Disponible: ${product.stock}`);
     }
   }
-  next();
 });
 
 // Middleware pour mettre à jour le champ updatedAt automatiquement
-cartSchema.pre("save", function (next) {
+cartSchema.pre("save", function () {
   this.updatedAt = Date.now();
-  next();
 });
 
 // Middleware pour supprimer les articles expirés
