@@ -1,4 +1,4 @@
-// app/api/cart/route.js
+// app/api/v1/cart/route.js
 
 import { NextResponse } from "next/server";
 import dbConnect from "@/backend/config/dbConnect";
@@ -14,11 +14,11 @@ import {
 } from "@/lib/auth-utils";
 
 /**
- * GET /api/cart
- * Récupère le panier de l'utilisateur connecté
- * Rate limit: Configuration intelligente - authenticatedRead (200 req/min pour utilisateurs authentifiés)
- *
- * Headers de sécurité gérés par next.config.mjs pour /api/cart/*
+ * GET /api/v1/cart
+ * Version mobile : récupère le panier de l'utilisateur connecté.
+ * Route privée. L'app doit envoyer le cookie de session Better Auth
+ * (voir authClient.getCookie() côté Expo).
+ * Rate limit: authenticatedRead (200 req/min)
  */
 export const GET = withIntelligentRateLimit(
   async function (req) {
@@ -100,7 +100,7 @@ export const GET = withIntelligentRateLimit(
         captureException(error, {
           tags: {
             component: "api",
-            route: "cart/GET",
+            route: "v1/cart/GET",
             user: req.user?.email,
           },
         });
@@ -125,14 +125,14 @@ export const GET = withIntelligentRateLimit(
   {
     category: "api",
     action: "authenticatedRead",
-    extractUserInfo: extractUserInfoFromRequest, // ✅ Remplacer l'ancienne fonction
+    extractUserInfo: extractUserInfoFromRequest,
   },
 );
 
 /**
- * POST /api/cart
- * Ajoute un produit au panier
- * Rate limit: Configuration intelligente - cart.add (100 req/min, ultra permissif)
+ * POST /api/v1/cart
+ * Version mobile : ajoute un produit au panier.
+ * Rate limit: cart.add (100 req/min, ultra permissif)
  */
 export const POST = withCartRateLimit(
   async function (req) {
@@ -339,7 +339,7 @@ export const POST = withCartRateLimit(
         captureException(error, {
           tags: {
             component: "api",
-            route: "cart/POST",
+            route: "v1/cart/POST",
             user: req.user?.email,
           },
         });
@@ -364,34 +364,13 @@ export const POST = withCartRateLimit(
   },
   {
     action: "add", // 100 req/min, pas de blocage
-    extractUserInfo: async (req) => {
-      // Extraire user + session pour tracking optimal
-      try {
-        const session = await getSessionFromRequest(req);
-        const sessionId =
-          req.headers.get("x-session-id") ||
-          req.cookies?.get("session_id")?.value;
-
-        return {
-          userId: session?.user?.id,
-          email: session?.user?.email,
-          sessionId,
-        };
-      } catch {
-        return {
-          sessionId:
-            req.headers.get("x-session-id") ||
-            req.cookies?.get("session_id")?.value,
-        };
-      }
-    },
   },
 );
 
 /**
- * PUT /api/cart
- * Met à jour la quantité d'un produit dans le panier
- * Rate limit: Configuration intelligente - cart.update (100 req/min, ultra permissif)
+ * PUT /api/v1/cart
+ * Version mobile : met à jour la quantité d'un produit dans le panier.
+ * Rate limit: cart.update (100 req/min, ultra permissif)
  */
 export const PUT = withCartRateLimit(
   async function (req) {
@@ -590,7 +569,7 @@ export const PUT = withCartRateLimit(
         captureException(error, {
           tags: {
             component: "api",
-            route: "cart/PUT",
+            route: "v1/cart/PUT",
             user: req.user?.email,
           },
         });
@@ -616,7 +595,6 @@ export const PUT = withCartRateLimit(
   {
     action: "update", // 100 req/min, pas de blocage
     extractUserInfo: async (req) => {
-      // Extraire user + session pour tracking optimal
       try {
         const session = await getSessionFromRequest(req);
         const sessionId =

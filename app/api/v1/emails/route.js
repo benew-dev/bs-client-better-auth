@@ -1,4 +1,4 @@
-// app/api/emails/route.js
+// app/api/v1/emails/route.js
 
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
@@ -14,23 +14,9 @@ import {
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 /**
- * POST /api/emails
- * Envoie un email de contact
- * Rate limit: Configuration intelligente personnalisée (3 emails par 15 minutes, strict)
- *
- * Headers de sécurité gérés par next.config.mjs pour /api/emails/* :
- * - Cache-Control: private, no-cache, no-store, must-revalidate
- * - Pragma: no-cache
- * - X-Content-Type-Options: nosniff
- * - X-Robots-Tag: noindex, nofollow
- * - X-Download-Options: noopen
- *
- * Headers globaux de sécurité (toutes routes) :
- * - Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
- * - X-Frame-Options: SAMEORIGIN
- * - Referrer-Policy: strict-origin-when-cross-origin
- * - Permissions-Policy: [configuration restrictive]
- * - Content-Security-Policy: [configuration complète]
+ * POST /api/v1/emails
+ * Version mobile : envoie un email de contact.
+ * Rate limit: 3 emails par 15 minutes, strict.
  */
 export const POST = withIntelligentRateLimit(
   async function (req) {
@@ -96,16 +82,14 @@ export const POST = withIntelligentRateLimit(
         );
       }
 
-      // Sanitizer le contenu pour éviter les injections XSS dans l'email
       const sanitizedSubject = validation.data.subject;
-
       const sanitizedMessage = validation.data.message;
 
       // Vérifier la configuration Resend
       if (!process.env.RESEND_API_KEY) {
         console.error("RESEND_API_KEY not configured");
         captureException(new Error("Email service not configured"), {
-          tags: { component: "api", route: "emails/POST" },
+          tags: { component: "api", route: "v1/emails/POST" },
           level: "error",
         });
 
@@ -193,7 +177,7 @@ ID Utilisateur: ${user.id}
         captureException(emailError, {
           tags: {
             component: "api",
-            route: "emails/POST",
+            route: "v1/emails/POST",
             service: "resend",
           },
           user: { id: user.id, email: user.email },
@@ -248,24 +232,26 @@ ID Utilisateur: ${user.id}
     } catch (error) {
       console.error("Email send error:", error.message);
 
-      // Capturer seulement les vraies erreurs système
-      if (!error.message === "Authentication required") {
+      // Correctif appliqué : comparaison exacte au lieu de .includes()
+      // (voir "Authentication required" levée par isAuthenticatedUser())
+      const isAuthError = error.message === "Authentication required";
+
+      if (!isAuthError) {
         captureException(error, {
           tags: {
             component: "api",
-            route: "emails/POST",
+            route: "v1/emails/POST",
             user: req.user?.email,
           },
           level: "error",
         });
       }
 
-      // Gestion améliorée des erreurs
       let status = 500;
       let message = "Failed to send email";
       let code = "INTERNAL_ERROR";
 
-      if (error.message === "Authentication required") {
+      if (isAuthError) {
         status = 401;
         message = "Authentication failed";
         code = "AUTH_FAILED";

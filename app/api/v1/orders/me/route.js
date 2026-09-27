@@ -1,3 +1,5 @@
+// app/api/v1/orders/me/route.js
+
 import { NextResponse } from "next/server";
 import dbConnect from "@/backend/config/dbConnect";
 import Order from "@/backend/models/order";
@@ -10,17 +12,10 @@ import {
 } from "@/lib/auth-utils";
 
 /**
- * GET /api/orders/me
- * Récupère l'historique des commandes de l'utilisateur connecté
- * Rate limit: Configuration intelligente - authenticatedRead (200 req/min)
+ * GET /api/v1/orders/me
+ * Version mobile : récupère l'historique des commandes de l'utilisateur connecté.
+ * Rate limit: authenticatedRead (200 req/min)
  *
- * Headers de sécurité gérés par next.config.mjs pour /api/orders/* :
- * - Cache-Control: private, no-cache, no-store, must-revalidate
- * - Pragma: no-cache
- * - X-Content-Type-Options: nosniff
- * - X-Robots-Tag: noindex, nofollow
- *
- * Note: Les commandes sont des données sensibles privées
  * Support du paiement CASH avec statut "pending_cash"
  */
 export const GET = withIntelligentRateLimit(
@@ -129,7 +124,7 @@ export const GET = withIntelligentRateLimit(
         searchParams,
       ).pagination(resPerPage);
 
-      // Récupérer les commandes avec pagination - CHAMPS ADAPTÉS AU MODÈLE
+      // Récupérer les commandes avec pagination
       const orders = await apiFilters.query
         .select(
           "orderNumber paymentInfo paymentStatus totalAmount createdAt updatedAt paidAt cancelledAt cancelReason orderItems",
@@ -142,7 +137,6 @@ export const GET = withIntelligentRateLimit(
 
       // Formater la réponse avec détection du paiement CASH
       const formattedOrders = orders.map((order) => {
-        // Vérifier si c'est un paiement CASH
         const isCashPayment =
           order.paymentInfo?.typePayment === "CASH" ||
           order.paymentInfo?.isCashPayment === true;
@@ -154,9 +148,7 @@ export const GET = withIntelligentRateLimit(
             email: user.email,
             phone: user.phone,
           },
-          // Ajouter un flag pour identifier facilement les paiements CASH
           isCashPayment,
-          // Ajouter un message descriptif pour le statut
           paymentStatusDescription: isCashPayment
             ? "Paiement en espèces à la récupération"
             : order.paymentStatus === "paid"
@@ -209,12 +201,14 @@ export const GET = withIntelligentRateLimit(
     } catch (error) {
       console.error("Orders fetch error:", error.message);
 
-      // Capturer seulement les vraies erreurs système
-      if (!error.message === "Authentication required") {
+      // Correctif appliqué : comparaison exacte au lieu de .includes()
+      const isAuthError = error.message === "Authentication required";
+
+      if (!isAuthError) {
         captureException(error, {
           tags: {
             component: "api",
-            route: "orders/me/GET",
+            route: "v1/orders/me/GET",
             user: req.user?.email,
           },
           extra: {
@@ -223,12 +217,11 @@ export const GET = withIntelligentRateLimit(
         });
       }
 
-      // Gestion détaillée des erreurs
       let status = 500;
       let message = "Failed to fetch orders history";
       let code = "INTERNAL_ERROR";
 
-      if (error.message === "Authentication required") {
+      if (isAuthError) {
         status = 401;
         message = "Authentication failed";
         code = "AUTH_FAILED";
@@ -257,7 +250,7 @@ export const GET = withIntelligentRateLimit(
   },
   {
     category: "api",
-    action: "authenticatedRead", // 200 req/min pour utilisateurs authentifiés
-    extractUserInfo: extractUserInfoFromRequest, // ✅ Remplacer la fonction personnalisée
+    action: "authenticatedRead",
+    extractUserInfo: extractUserInfoFromRequest,
   },
 );

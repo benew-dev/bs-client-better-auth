@@ -1,4 +1,4 @@
-// app/api/paymentPlatform/route.js
+// app/api/v1/paymentPlatform/route.js
 
 import { NextResponse } from "next/server";
 import dbConnect from "@/backend/config/dbConnect";
@@ -8,22 +8,9 @@ import { withIntelligentRateLimit } from "@/utils/rateLimit";
 import { extractUserInfoFromRequest } from "@/lib/auth-utils";
 
 /**
- * GET /api/paymentPlatform
- * Récupère toutes les plateformes de paiement disponibles
- * Rate limit: Configuration intelligente - publicRead (100 req/min) ou authenticatedRead (200 req/min)
- *
- * Headers de sécurité gérés par next.config.mjs pour /api/paymentPlatform/* :
- * - Cache-Control: public, max-age=300, stale-while-revalidate=600
- * - CDN-Cache-Control: max-age=600
- * - X-Content-Type-Options: nosniff
- * - Vary: Accept-Encoding
- *
- * Headers globaux de sécurité (toutes routes) :
- * - Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
- * - X-Frame-Options: SAMEORIGIN
- * - Referrer-Policy: strict-origin-when-cross-origin
- * - Permissions-Policy: [configuration restrictive]
- * - Content-Security-Policy: [configuration complète]
+ * GET /api/v1/paymentPlatform
+ * Version mobile : récupère toutes les plateformes de paiement disponibles.
+ * Route publique. Rate limit: publicRead (100 req/min) ou authenticatedRead (200 req/min)
  *
  * Note: Les plateformes de paiement sont des données publiques avec cache long
  * car elles changent rarement dans un e-commerce
@@ -58,7 +45,7 @@ export const GET = withIntelligentRateLimit(
         );
       }
 
-      // Formater les plateformes pour optimiser la réponse avec le nouveau modèle
+      // Formater les plateformes pour optimiser la réponse
       const formattedPaymentPlatforms = paymentPlatforms.map((payment) => ({
         _id: payment._id,
         platform: payment.platform,
@@ -81,7 +68,7 @@ export const GET = withIntelligentRateLimit(
               timestamp: new Date().toISOString(),
               etag: dataHash,
               cached: true,
-              cacheMaxAge: 300, // Informer le client du cache
+              cacheMaxAge: 300,
             },
           },
         },
@@ -90,11 +77,10 @@ export const GET = withIntelligentRateLimit(
     } catch (error) {
       console.error("Payment platforms fetch error:", error.message);
 
-      // Capturer seulement les vraies erreurs système
       captureException(error, {
         tags: {
           component: "api",
-          route: "payment-platforms/GET",
+          route: "v1/payment-platforms/GET",
           error_type: error.name,
         },
         extra: {
@@ -103,7 +89,6 @@ export const GET = withIntelligentRateLimit(
         },
       });
 
-      // Gestion améliorée des erreurs
       let status = 500;
       let message = "Failed to fetch payment platforms";
       let code = "INTERNAL_ERROR";
@@ -137,6 +122,6 @@ export const GET = withIntelligentRateLimit(
   {
     category: "api",
     action: "publicRead",
-    extractUserInfo: extractUserInfoFromRequest, // ✅ Remplacer la fonction personnalisée
+    extractUserInfo: extractUserInfoFromRequest,
   },
 );

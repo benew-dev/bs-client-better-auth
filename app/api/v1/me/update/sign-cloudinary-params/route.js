@@ -1,4 +1,4 @@
-// app/api/auth/me/update/sign-cloudinary-params/route.js
+// app/api/v1/me/update/sign-cloudinary-params/route.js
 
 import { NextResponse } from "next/server";
 import cloudinary from "cloudinary";
@@ -19,11 +19,11 @@ cloudinary.config({
 });
 
 /**
- * POST /api/auth/me/update/sign-cloudinary-params
- * Signe les paramètres pour l'upload Cloudinary sécurisé
- * Rate limit: Configuration intelligente - api.upload (10 req/5min, strict)
- *
- * Headers de sécurité gérés par next.config.mjs pour /api/auth/*
+ * POST /api/v1/auth/me/update/sign-cloudinary-params
+ * Version mobile : signe les paramètres pour l'upload Cloudinary sécurisé
+ * (avatar depuis l'app Expo, upload direct via l'API REST Cloudinary avec
+ * la signature retournée).
+ * Rate limit: api.upload (10 req/5min, strict)
  */
 export const POST = withIntelligentRateLimit(
   async function (req) {
@@ -36,7 +36,7 @@ export const POST = withIntelligentRateLimit(
       ) {
         captureMessage("Cloudinary configuration missing", {
           level: "error",
-          tags: { component: "api", route: "sign-cloudinary-params" },
+          tags: { component: "api", route: "v1/sign-cloudinary-params" },
         });
 
         return NextResponse.json(
@@ -123,7 +123,7 @@ export const POST = withIntelligentRateLimit(
         captureException(error, {
           tags: {
             component: "api",
-            route: "sign-cloudinary-params",
+            route: "v1/sign-cloudinary-params",
             action: "signature_generation",
           },
           extra: {
@@ -173,7 +173,8 @@ export const POST = withIntelligentRateLimit(
     } catch (error) {
       console.error("Sign cloudinary params error:", error);
 
-      // Détection explicite de l'erreur d'authentification (corrigé)
+      // NOUVEAU (absent du fichier source) : détection explicite de l'erreur
+      // d'authentification, par cohérence avec les autres routes v1.
       if (error.message === "Authentication required") {
         return NextResponse.json(
           {
@@ -188,7 +189,7 @@ export const POST = withIntelligentRateLimit(
       captureException(error, {
         tags: {
           component: "api",
-          route: "sign-cloudinary-params",
+          route: "v1/sign-cloudinary-params",
         },
         extra: {
           errorName: error.name,

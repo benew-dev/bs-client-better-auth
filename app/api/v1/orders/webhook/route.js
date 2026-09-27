@@ -1,3 +1,5 @@
+// app/api/v1/orders/webhook/route.js
+
 import { NextResponse } from "next/server";
 import dbConnect from "@/backend/config/dbConnect";
 import Order from "@/backend/models/order";
@@ -12,10 +14,10 @@ import {
 } from "@/lib/auth-utils";
 
 /**
- * POST /api/orders/webhook
- * Crée une commande après paiement confirmé (ou avec paiement CASH en attente)
- * Rate limit: 5 commandes par 10 minutes (protection anti-abus strict)
- * Adapté pour ~500 visiteurs/jour
+ * POST /api/v1/orders/webhook
+ * Version mobile : crée une commande après paiement confirmé
+ * (ou avec paiement CASH en attente).
+ * Rate limit: payment.createOrder (5 commandes / 5 min, blocage 10 min)
  *
  * Support du paiement CASH:
  * - Pas de validation des champs de compte pour CASH
@@ -208,7 +210,7 @@ export const POST = withIntelligentRateLimit(
               {
                 $inc: {
                   stock: -item.quantity,
-                  sold: item.quantity, // Incrémenter les ventes
+                  sold: item.quantity,
                 },
               },
               { session },
@@ -267,7 +269,6 @@ export const POST = withIntelligentRateLimit(
             );
           }
 
-          // La transaction sera automatiquement commitée si tout réussit
           return order[0];
         });
 
@@ -313,7 +314,6 @@ export const POST = withIntelligentRateLimit(
           try {
             const errorData = JSON.parse(transactionError.message);
 
-            // Log pour analyse
             console.warn("Order failed due to stock issues:", {
               userId: user.id,
               unavailableProducts: errorData.products,
@@ -334,14 +334,12 @@ export const POST = withIntelligentRateLimit(
           }
         }
 
-        // Log de l'erreur de transaction
         console.error("Transaction failed:", {
           userId: user.id,
           error: transactionError.message,
           timestamp: new Date().toISOString(),
         });
 
-        // Autre erreur de transaction
         throw transactionError;
       } finally {
         await session.endSession();
@@ -349,29 +347,31 @@ export const POST = withIntelligentRateLimit(
     } catch (error) {
       console.error("Order webhook error:", error.message);
 
+      // Correctif appliqué : comparaison exacte au lieu de .includes()
+      const isAuthError = error.message === "Authentication required";
+
       // Capturer seulement les vraies erreurs système
       if (
-        !error.message === "Authentication required" &&
+        !isAuthError &&
         !error.message?.includes("STOCK_ERROR") &&
         !error.message?.includes("PAYMENT_")
       ) {
         captureException(error, {
           tags: {
             component: "api",
-            route: "orders/webhook/POST",
+            route: "v1/orders/webhook/POST",
             user: req.user?.email,
-            critical: true, // Erreur critique car c'est une commande
+            critical: true,
           },
           level: "error",
         });
       }
 
-      // Gestion détaillée des erreurs
       let status = 500;
       let message = "Failed to process order. Please try again.";
       let code = "INTERNAL_ERROR";
 
-      if (error.message === "Authentication required") {
+      if (isAuthError) {
         status = 401;
         message = "Authentication failed";
         code = "AUTH_FAILED";
@@ -405,7 +405,7 @@ export const POST = withIntelligentRateLimit(
   },
   {
     category: "payment",
-    action: "createOrder", // 5 commandes par 5 minutes
-    extractUserInfo: extractUserInfoFromRequest, // ✅ Remplacer la fonction personnalisée
+    action: "createOrder",
+    extractUserInfo: extractUserInfoFromRequest,
   },
 );

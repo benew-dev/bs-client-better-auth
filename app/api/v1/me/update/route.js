@@ -1,4 +1,4 @@
-// app/api/auth/me/update/route.js
+// app/api/v1/me/update/route.js
 
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
@@ -12,11 +12,9 @@ import {
 } from "@/lib/auth-utils";
 
 /**
- * PUT /api/auth/me/update
- * Met à jour le profil utilisateur AVEC adresse via Better Auth
- * Rate limit: Configuration intelligente - api.write (30 req/min pour utilisateurs authentifiés)
- *
- * Headers de sécurité gérés par next.config.mjs pour /api/auth/*
+ * PUT /api/v1/auth/me/update
+ * Version mobile : met à jour le profil utilisateur (phone + adresse) via Better Auth.
+ * Rate limit: api.write (30 req/min pour utilisateurs authentifiés)
  */
 export const PUT = withIntelligentRateLimit(
   async function (req) {
@@ -129,13 +127,15 @@ export const PUT = withIntelligentRateLimit(
       );
 
       // Signale au client qu'il doit rafraîchir sa session locale
+      // (côté Expo : rappeler authClient.getSession() / useSession().refetch())
       response.headers.set("X-Session-Updated", "true");
 
       return response;
     } catch (error) {
       console.error("Profile update error:", error.message);
 
-      // Détection explicite de l'erreur d'authentification (corrigé)
+      // NOUVEAU (absent du fichier source) : détection explicite de l'erreur
+      // d'authentification, par cohérence avec les autres routes v1.
       if (error.message === "Authentication required") {
         return NextResponse.json(
           {
@@ -149,7 +149,7 @@ export const PUT = withIntelligentRateLimit(
 
       if (error.name !== "ValidationError") {
         captureException(error, {
-          tags: { component: "api", route: "auth/me/update" },
+          tags: { component: "api", route: "v1/auth/me/update" },
         });
       }
 

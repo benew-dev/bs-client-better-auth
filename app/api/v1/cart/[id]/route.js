@@ -1,4 +1,4 @@
-// app/api/cart/[id]/route.js
+// app/api/v1/cart/[id]/route.js
 
 import { NextResponse } from "next/server";
 import dbConnect from "@/backend/config/dbConnect";
@@ -10,17 +10,17 @@ import { withCartRateLimit } from "@/utils/rateLimit";
 import { getSessionFromRequest, isAuthenticatedUser } from "@/lib/auth-utils";
 
 /**
- * DELETE /api/cart/[id]
- * Supprime un élément du panier
- * Rate limit: Configuration intelligente - cart.remove (50 req/min, ultra permissif, pas de blocage)
- *
- * Headers de sécurité gérés par next.config.mjs pour /api/cart/*
+ * DELETE /api/v1/cart/[id]
+ * Version mobile : supprime un élément du panier.
+ * Rate limit: cart.remove (50 req/min, ultra permissif, pas de blocage)
  */
 export const DELETE = withCartRateLimit(
   async function (req, { params }) {
+    // Next.js 15 : params est une Promise
+    const { id } = await params;
+
     try {
       // Validation de l'ID
-      const { id } = params;
       if (!id || !/^[0-9a-fA-F]{24}$/.test(id)) {
         return NextResponse.json(
           {
@@ -181,9 +181,9 @@ export const DELETE = withCartRateLimit(
         captureException(error, {
           tags: {
             component: "api",
-            route: "cart/[id]/DELETE",
+            route: "v1/cart/[id]/DELETE",
             user: req.user?.email,
-            cartItemId: params.id,
+            cartItemId: id,
           },
         });
       }
@@ -226,7 +226,6 @@ export const DELETE = withCartRateLimit(
   {
     action: "remove", // 50 req/min, pas de blocage
     extractUserInfo: async (req) => {
-      // Extraire user + session pour tracking optimal
       try {
         const session = await getSessionFromRequest(req);
         const sessionId =
