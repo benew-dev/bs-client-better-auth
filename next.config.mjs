@@ -429,6 +429,47 @@ const nextConfig = {
           },
         ],
       },
+      {
+        source: "/api/v1/(products|category|paymentPlatform)/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=300, stale-while-revalidate=600",
+          },
+          { key: "CDN-Cache-Control", value: "max-age=600" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Vary", value: "Accept-Encoding" },
+        ],
+      },
+      {
+        source: "/api/v1/(address|cart|orders|emails)/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "private, no-cache, no-store, must-revalidate",
+          },
+          { key: "Pragma", value: "no-cache" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+          { key: "X-Download-Options", value: "noopen" },
+        ],
+      },
+      {
+        source: "/api/v1/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value:
+              "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+          },
+          { key: "Pragma", value: "no-cache" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          {
+            key: "X-Robots-Tag",
+            value: "noindex, nofollow, noarchive, nosnippet",
+          },
+        ],
+      },
     ];
   },
 
